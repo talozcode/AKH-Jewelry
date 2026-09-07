@@ -1,26 +1,69 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --color-charcoal: #17140f;
+  --color-charcoal-soft: #201c15;
+  --color-ivory: #f4eee3;
+  --color-ivory-deep: #ece3d3;
+  --color-stone: #d8cdb9;
+  --color-copper: #b0602f;
+  --color-copper-soft: #c9825a;
+  --color-mineral: #837a6a;
+  --color-mineral-light: #a89f8d;
+  --color-ink: #1c1812;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-charcoal: var(--color-charcoal);
+  --color-charcoal-soft: var(--color-charcoal-soft);
+  --color-ivory: var(--color-ivory);
+  --color-ivory-deep: var(--color-ivory-deep);
+  --color-stone: var(--color-stone);
+  --color-copper: var(--color-copper);
+  --color-copper-soft: var(--color-copper-soft);
+  --color-mineral: var(--color-mineral);
+  --color-mineral-light: var(--color-mineral-light);
+  --color-ink: var(--color-ink);
+
+  --font-display: var(--font-fraunces);
+  --font-sans: var(--font-inter);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  scroll-behavior: smooth;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-ivory);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+}
+
+::selection {
+  background: var(--color-copper);
+  color: var(--color-ivory);
+}
+
+.font-display {
+  font-family: var(--font-display);
+}
+
+/* Fine hairline rule used throughout for an editorial, sculptural feel */
+.hairline {
+  border-color: currentColor;
+  opacity: 1;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.placeholder-art {
+  background-size: 200% 200%;
+  animation: shimmer 8s ease-in-out infinite;
 }
