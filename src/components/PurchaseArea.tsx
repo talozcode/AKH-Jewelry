@@ -25,7 +25,7 @@ export function PurchaseArea({ product }: { product: Product }) {
                 key={s}
                 onClick={() => setSize(s)}
                 className={`min-w-11 border px-3 py-2 text-sm transition ${
-                  size === s ? "border-ink bg-ink text-ivory" : "border-ink/25 hover:border-ink"
+                  size === s ? "border-charcoal bg-charcoal text-ivory" : "border-ink/25 hover:border-ink"
                 }`}
               >
                 {s}
@@ -38,7 +38,7 @@ export function PurchaseArea({ product }: { product: Product }) {
       <button
         disabled={disabled}
         onClick={() => setReserved(true)}
-        className="w-full bg-ink py-4 text-sm uppercase tracking-[0.14em] text-ivory transition hover:bg-charcoal-soft disabled:cursor-not-allowed disabled:bg-ink/30"
+        className="w-full bg-charcoal py-4 text-sm uppercase tracking-[0.14em] text-ivory transition hover:bg-charcoal-soft disabled:cursor-not-allowed disabled:bg-charcoal/30"
       >
         {disabled ? "Out of Stock" : reserved ? "Request Sent" : "Add to Cart"}
       </button>
@@ -80,7 +80,7 @@ export function StickyMobileBar({ product }: { product: Product }) {
       </div>
       <a
         href="#purchase"
-        className="bg-ink px-5 py-3 text-xs uppercase tracking-[0.14em] text-ivory"
+        className="bg-charcoal px-5 py-3 text-xs uppercase tracking-[0.14em] text-ivory"
       >
         Add to Cart
       </a>
