@@ -6,6 +6,26 @@ Complete redesign of a friend's jewelry e-commerce site (akhjewelry.com, current
 Wix). Part of the "talozcode" family of side projects. See the original brief for the
 full requirements — this file tracks what's actually built.
 
+## Route structure: `(site)` group + `/design-concepts`
+
+All live-site routes moved under `src/app/(site)/` (a route group — doesn't
+affect URLs) with their own `(site)/layout.tsx` owning `<Header/>`/`<Footer/>`.
+Root `src/app/layout.tsx` now only sets up `<html>/<body>` and fonts. This
+exists so `src/app/design-concepts/page.tsx` — an internal, noindexed page
+comparing 4 alternative visual directions for the whole brand, built when the
+user said "I am not sure about the design" — can render with NO site chrome
+at all (a dark or paper-toned concept next to the live warm-olive Header
+would be confusing). If you add a new top-level route that should show
+Header/Footer, put it under `(site)/`, matching every existing route.
+`design-concepts/` is deliberately outside `globals.css`'s influence — see
+its own `_lib/shared-content.ts` (shares real product data across all 4
+concepts so nothing drifts) and `_components/Concept{A,B,C,D}.tsx` (each is
+fully self-scoped: its own hex consts and, for B/C/D, its own
+`next/font/google` loads — never touches the global `--color-*`/`--font-*`
+tokens). Don't merge a winning concept's styling into the live site by
+hand-copying colors into `globals.css` piecemeal; if one is chosen, do a
+deliberate token-system swap and update this doc.
+
 ## Why the design looks the way it does (read before restyling)
 
 The first two passes at this site (warm palette aside) still read as a generic
