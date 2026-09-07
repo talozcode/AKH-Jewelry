@@ -58,6 +58,16 @@ headlines. Do not add new one-off colors — extend this token set instead.
   access to). If the user provides them as files/URLs later, prefer them
   over the Pexels placeholders immediately — they're more valuable than any
   stock photo.
+- The user also pointed to the real Instagram, @akhjewelry. Firecrawl refuses
+  to scrape instagram.com entirely; a general fetch got only the profile's
+  visible bio/description, not actual post images. What it confirmed: bio is
+  "Handmade & bespoke jewelry, crafted with love and light 🤍", highlights are
+  "custom made / process / daily picks / about", and the feed is minimalist,
+  soft and lifestyle-driven — individual ring shots and flat-lays styled with
+  coffee cups and textured fabric backgrounds, not dark editorial studio
+  photography. This reinforces the packaging-driven pivot above (warm/soft
+  over dark/moody) rather than changing it further. If a way to actually pull
+  their post images turns up later, prefer those over Pexels too.
 - The old `PlaceholderArt` SVG-placeholder system from the first pass has been
   removed now that real product photos are wired in.
 
