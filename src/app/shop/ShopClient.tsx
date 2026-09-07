@@ -6,11 +6,20 @@ import { ProductCard } from "@/components/ProductCard";
 import { products } from "@/lib/products";
 import { Category } from "@/lib/types";
 
-const CATEGORIES: Category[] = ["Rings", "Necklaces", "Bracelets", "Ready to Wear"];
+const CATEGORIES: Category[] = ["Rings", "Necklaces", "Bracelets"];
 const MATERIALS = ["Silver", "Gold"] as const;
-const STONES = ["Emerald", "Sapphire", "Garnet", "No stone"] as const;
+const STONE_STEMS: [string, string][] = [
+  ["Emerald", "emerald"],
+  ["Sapphire", "sapphir"],
+  ["Garnet", "garnet"],
+  ["Tourmaline", "tourmaline"],
+  ["Spinel", "spinel"],
+  ["Kunzite", "kunzite"],
+  ["Ruby", "rub"],
+];
+const STONES = [...STONE_STEMS.map(([label]) => label), "No stone"] as const;
 const AVAILABILITY = ["In Stock", "Made to Order", "Out of Stock"] as const;
-const COLLECTIONS = ["Core Collection", "One of One", "Ready to Wear"] as const;
+const COLLECTIONS = ["Core Collection", "One of One"] as const;
 const PRICE_BANDS: { label: string; test: (p: number) => boolean }[] = [
   { label: "Under ₪800", test: (p) => p < 800 },
   { label: "₪800 – ₪1,500", test: (p) => p >= 800 && p <= 1500 },
@@ -45,18 +54,14 @@ export function ShopClient() {
         if (!materialFilter.includes(tag)) return false;
       }
       if (stoneFilter.length) {
-        const stoneTag = p.stone
-          ? STONES.find((s) => p.stone!.toLowerCase().includes(s.toLowerCase().split(" ")[0])) ?? "No stone"
-          : "No stone";
+        const lower = p.stone?.toLowerCase() ?? "";
+        const stoneTag = p.stone ? STONE_STEMS.find(([, stem]) => lower.includes(stem))?.[0] ?? "No stone" : "No stone";
         if (!stoneFilter.includes(stoneTag)) return false;
       }
       if (availabilityFilter.length && !availabilityFilter.includes(p.availability)) return false;
       if (collectionFilter.length) {
-        const tags: string[] = [];
-        if (p.limitedEdition) tags.push("One of One");
-        if (p.category === "Ready to Wear") tags.push("Ready to Wear");
-        if (!p.limitedEdition && p.category !== "Ready to Wear") tags.push("Core Collection");
-        if (!tags.some((t) => collectionFilter.includes(t))) return false;
+        const tag = p.limitedEdition ? "One of One" : "Core Collection";
+        if (!collectionFilter.includes(tag)) return false;
       }
       if (priceFilter.length) {
         const band = PRICE_BANDS.find((b) => b.test(p.price));

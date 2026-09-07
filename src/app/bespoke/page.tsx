@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { PlaceholderArt } from "@/components/PlaceholderArt";
+import { STOCK } from "@/lib/stockImages";
 
 export const metadata: Metadata = {
   title: "Bespoke",
@@ -18,9 +18,10 @@ export default function BespokePage() {
     <>
       <section className="relative flex min-h-[50vh] items-end overflow-hidden bg-charcoal text-ivory">
         <div className="absolute inset-0">
-          <PlaceholderArt motif="editorial" tone="copper" variant="dark" />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={STOCK.bespokeEditorial} alt="" className="h-full w-full object-cover opacity-70" />
         </div>
-        <div className="absolute inset-0 bg-gradient-to-t from-charcoal via-charcoal/40 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-charcoal via-charcoal/50 to-charcoal/20" />
         <div className="relative mx-auto w-full max-w-5xl px-4 pb-14 sm:px-6 lg:px-8">
           <p className="text-xs uppercase tracking-[0.16em] text-copper-soft">Bespoke</p>
           <h1 className="mt-3 max-w-xl font-display text-4xl leading-tight sm:text-5xl">

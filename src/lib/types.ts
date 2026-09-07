@@ -1,4 +1,4 @@
-export type Category = "Rings" | "Necklaces" | "Bracelets" | "Ready to Wear";
+export type Category = "Rings" | "Necklaces" | "Bracelets";
 
 export type Availability = "In Stock" | "Made to Order" | "Out of Stock";
 
@@ -16,8 +16,8 @@ export type Product = {
   availability: Availability;
   dispatch: string;
   limitedEdition?: string;
-  motif: "ring" | "necklace" | "bangle";
-  tone: "copper" | "ink" | "stone";
+  /** Real photography pulled from the live site, largest usable crop first. */
+  images: string[];
   tagline: string;
   description: string;
   story: string;

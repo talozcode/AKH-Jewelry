@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { PlaceholderArt } from "@/components/PlaceholderArt";
+import { STOCK } from "@/lib/stockImages";
 
 export const metadata: Metadata = {
   title: "Our Story",
@@ -19,8 +19,9 @@ export default function StoryPage() {
       </section>
 
       <section className="mx-auto grid max-w-6xl grid-cols-1 items-center gap-10 px-4 py-16 sm:px-6 lg:grid-cols-2 lg:px-8">
-        <div className="aspect-[4/5]">
-          <PlaceholderArt motif="hands" tone="copper" label="Founder portrait" />
+        <div className="aspect-[4/5] overflow-hidden">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={STOCK.brandStoryProcess} alt="Setting a stone by hand at the studio bench" className="h-full w-full object-cover" />
         </div>
         <div className="space-y-5 text-sm leading-relaxed text-ink/75">
           <p>
@@ -35,14 +36,15 @@ export default function StoryPage() {
             customer.
           </p>
           <p>
-            Materials are chosen deliberately: recycled sterling silver and 18k gold,
-            and stones sourced directly, including Nigerian emeralds and white
-            sapphires selected one at a time rather than bought by the parcel.
+            Materials are chosen deliberately: sterling silver and 9–18k gold, set
+            with stones sourced directly — including Nigerian emeralds, sapphires
+            and garnets selected one at a time. Larger stones carry independent
+            CGRL certification.
           </p>
           <p>
-            What makes the process distinctive is its scale. Pieces are made in small,
-            numbered batches, and one-of-one settings are built around a single stone
-            and never repeated once it&apos;s gone.
+            What makes the process distinctive is its scale. Pieces are made in
+            small, numbered batches, and one-of-one settings are built around a
+            single stone and never repeated once it&apos;s gone.
           </p>
         </div>
       </section>

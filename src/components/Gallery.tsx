@@ -2,18 +2,12 @@
 
 import { useState } from "react";
 import { Product } from "@/lib/types";
-import { PlaceholderArt } from "./PlaceholderArt";
-
-const VIEWS: { label: string; variant: "light" | "dark" }[] = [
-  { label: "Front view", variant: "light" },
-  { label: "Alternate angle", variant: "light" },
-  { label: "Macro detail", variant: "dark" },
-  { label: "On body", variant: "dark" },
-];
+import { ProductImage } from "./ProductImage";
 
 export function Gallery({ product }: { product: Product }) {
   const [active, setActive] = useState(0);
   const [zoomed, setZoomed] = useState(false);
+  const images = product.images;
 
   return (
     <div>
@@ -22,39 +16,35 @@ export function Gallery({ product }: { product: Product }) {
         onClick={() => setZoomed((v) => !v)}
       >
         <div className={`h-full w-full transition-transform duration-300 ${zoomed ? "scale-150" : "scale-100"}`}>
-          <PlaceholderArt
-            motif={product.motif}
-            tone={product.tone}
-            variant={VIEWS[active].variant}
-            label={VIEWS[active].label}
-          />
+          <ProductImage idExt={images[active]} alt={product.name} w={1200} h={1200} />
         </div>
-        <span className="absolute bottom-3 right-3 rounded-sm bg-ink/60 px-2 py-1 text-[10px] uppercase tracking-[0.12em] text-ivory">
-          {zoomed ? "Click to reset" : "Click to zoom"}
-        </span>
+        {images.length > 1 ? (
+          <span className="absolute bottom-3 right-3 rounded-sm bg-ink/60 px-2 py-1 text-[10px] uppercase tracking-[0.12em] text-ivory">
+            {zoomed ? "Click to reset" : "Click to zoom"}
+          </span>
+        ) : null}
       </div>
 
-      <div className="mt-3 grid grid-cols-4 gap-3">
-        {VIEWS.map((view, i) => (
-          <button
-            key={view.label}
-            onClick={() => {
-              setActive(i);
-              setZoomed(false);
-            }}
-            aria-label={view.label}
-            aria-current={active === i}
-            className={`aspect-square overflow-hidden border transition ${
-              active === i ? "border-copper" : "border-transparent opacity-70 hover:opacity-100"
-            }`}
-          >
-            <PlaceholderArt motif={product.motif} tone={product.tone} variant={view.variant} />
-          </button>
-        ))}
-      </div>
-      <p className="mt-2 text-xs text-mineral">
-        Product video coming soon for this piece.
-      </p>
+      {images.length > 1 ? (
+        <div className="mt-3 grid grid-cols-4 gap-3">
+          {images.map((img, i) => (
+            <button
+              key={img}
+              onClick={() => {
+                setActive(i);
+                setZoomed(false);
+              }}
+              aria-label={`View ${i + 1}`}
+              aria-current={active === i}
+              className={`aspect-square overflow-hidden border transition ${
+                active === i ? "border-copper" : "border-transparent opacity-70 hover:opacity-100"
+              }`}
+            >
+              <ProductImage idExt={img} alt={`${product.name} view ${i + 1}`} w={200} h={200} />
+            </button>
+          ))}
+        </div>
+      ) : null}
     </div>
   );
 }

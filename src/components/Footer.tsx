@@ -8,7 +8,6 @@ const COLUMNS: { title: string; links: { href: string; label: string }[] }[] = [
       { href: "/shop?category=Rings", label: "Rings" },
       { href: "/shop?category=Necklaces", label: "Necklaces" },
       { href: "/shop?category=Bracelets", label: "Bracelets" },
-      { href: "/shop?category=Ready+to+Wear", label: "Ready to Wear" },
     ],
   },
   {
