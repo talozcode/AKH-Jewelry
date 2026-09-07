@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 
 export default function TermsPage() {
   return (
-    <SimplePage eyebrow="Legal" title="Terms & Privacy">
+    <SimplePage title="Terms & Privacy">
       <p>
         This page will host AKH&apos;s full terms of service and privacy policy ahead
         of launch, covering order terms, made-to-order and one-of-one sale

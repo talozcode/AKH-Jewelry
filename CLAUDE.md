@@ -6,6 +6,47 @@ Complete redesign of a friend's jewelry e-commerce site (akhjewelry.com, current
 Wix). Part of the "talozcode" family of side projects. See the original brief for the
 full requirements — this file tracks what's actually built.
 
+## Why the design looks the way it does (read before restyling)
+
+The first two passes at this site (warm palette aside) still read as a generic
+AI-generated template, and the user called that out directly. Two research
+agents studied the actual shipped CSS/HTML of real indie-artisan jewelry
+sites (Catbird NYC, Wwake, Grainne Morton, Alighieri) to find out what
+actually reads as "handmade, worth $300" versus "cheap template". Findings
+that changed this codebase:
+
+- **Filled brand-color CTA buttons are a tell.** None of the four reference
+  sites fill marketing buttons with a bright accent color — Wwake's button
+  "accent color" is literally desaturated grey; the others use plain
+  ink-outline or underlined-text buttons and reserve solid fills for the
+  true primary commerce action (Add to Cart) in near-black, not a brand hue.
+  This codebase now does the same: `border border-ink ... hover:bg-ink
+  hover:text-ivory` for marketing CTAs (shop the collection, begin a bespoke
+  piece, etc.); only the actual "Add to Cart" button in `PurchaseArea.tsx`
+  is filled, and it's filled ink, not copper.
+- **A tracked-out uppercase eyebrow label above every section heading is a
+  tell.** None of the reference homepages stamp one above each section. This
+  codebase no longer does either — check before adding one back.
+- **Middle-dot-joined metadata ("Name · Detail") reads as templated
+  attribution chrome.** Removed from `ProductCard.tsx` and the homepage
+  testimonials.
+- **The real differentiator has to come from the actual subject matter**, not
+  from a swapped color or font. Alighieri's device is literary Dante quotes;
+  Grainne Morton's is visible sketchbook/process ephemera. AKH's equivalent —
+  and it was sitting unused in `products.ts` the whole time — is that most
+  piece names are real Hebrew words/phrases with real meanings pulled from
+  the live site ("Kohl Davar Bezmano" — everything comes in its own time;
+  Levone is set with kunzite because that stone fades in daylight, so it's
+  made to be worn at night). The product page now surfaces `product.story`
+  as a visible pull-quote instead of burying it in an accordion, and the
+  homepage brand-story section leads with it instead of generic copy.
+- One deliberate moving element (a slow marquee ticker of real process facts,
+  motion-reduced for `prefers-reduced-motion`) replaces the "fade-and-slide-up
+  on every section" pattern that reads as generated.
+
+If you're about to add an eyebrow label, a filled copper button, or a
+`·`-joined caption: don't — that's reverting exactly what this pass fixed.
+
 ## Stack
 
 - Next.js 16 (App Router, Turbopack), TypeScript, Tailwind CSS v4

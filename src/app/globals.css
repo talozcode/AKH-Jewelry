@@ -61,3 +61,20 @@ body {
   border-color: currentColor;
   opacity: 1;
 }
+
+/* Process ticker on the homepage — content is tripled, so one third of the
+   translation is a seamless loop. */
+@keyframes marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-33.3333%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-\[marquee_28s_linear_infinite\] {
+    animation: none;
+  }
+}

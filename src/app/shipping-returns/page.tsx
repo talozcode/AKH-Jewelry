@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 
 export default function ShippingReturnsPage() {
   return (
-    <SimplePage eyebrow="Policy" title="Shipping & Returns">
+    <SimplePage title="Shipping & Returns">
       <div>
         <h2 className="font-display text-lg text-ink">Shipping</h2>
         <p className="mt-2">

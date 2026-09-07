@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 
 export default function FaqPage() {
   return (
-    <SimplePage eyebrow="Help" title="Frequently Asked Questions">
+    <SimplePage title="Frequently Asked Questions">
       <Accordion
         items={[
           { title: "Who makes AKH jewelry?", content: "Every piece is made by hand in a single studio, from a hand-carved wax model through casting, setting and finishing." },

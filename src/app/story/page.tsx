@@ -11,8 +11,7 @@ export default function StoryPage() {
     <>
       <section className="bg-charcoal text-ivory">
         <div className="mx-auto max-w-4xl px-4 py-20 text-center sm:px-6 lg:px-8">
-          <p className="text-xs uppercase tracking-[0.16em] text-copper-soft">Our Story</p>
-          <h1 className="mt-3 font-display text-4xl leading-tight sm:text-5xl">
+          <h1 className="font-display text-4xl leading-tight sm:text-5xl">
             One studio. One bench. Every piece made by hand.
           </h1>
         </div>
@@ -54,7 +53,7 @@ export default function StoryPage() {
           <h2 className="font-display text-2xl">Have a question about a piece, or an idea for one?</h2>
           <a
             href="mailto:hello@akhjewelry.com"
-            className="mt-6 inline-block bg-ink px-7 py-3.5 text-sm uppercase tracking-[0.12em] text-ivory hover:bg-copper"
+            className="mt-6 inline-block border border-ink px-7 py-3.5 text-sm text-ink transition hover:bg-ink hover:text-ivory"
           >
             hello@akhjewelry.com
           </a>

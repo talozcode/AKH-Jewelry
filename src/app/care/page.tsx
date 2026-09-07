@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 
 export default function CarePage() {
   return (
-    <SimplePage eyebrow="Care" title="Caring for your piece">
+    <SimplePage title="Caring for your piece">
       <p>Each product page includes care notes specific to that piece&apos;s metal and stone. A few general rules:</p>
       <ul className="list-disc space-y-2 pl-5">
         <li>Remove jewelry before swimming, showering, exercise or manual work.</li>

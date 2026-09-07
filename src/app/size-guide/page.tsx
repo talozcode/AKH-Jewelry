@@ -17,7 +17,6 @@ const SIZES = [
 export default function SizeGuidePage() {
   return (
     <SimplePage
-      eyebrow="Sizing"
       title="Ring size guide"
       intro="AKH rings are sized to EU standard: the size number is your finger's circumference in millimeters. Wrap a strip of paper around your finger, mark where it overlaps, and measure the length against the chart below. Most rings are cast to one size; email hello@akhjewelry.com before ordering if you need a different one."
     >

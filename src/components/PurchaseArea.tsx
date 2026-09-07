@@ -38,7 +38,7 @@ export function PurchaseArea({ product }: { product: Product }) {
       <button
         disabled={disabled}
         onClick={() => setReserved(true)}
-        className="w-full bg-ink py-4 text-sm uppercase tracking-[0.14em] text-ivory transition hover:bg-copper disabled:cursor-not-allowed disabled:bg-ink/30"
+        className="w-full bg-ink py-4 text-sm uppercase tracking-[0.14em] text-ivory transition hover:bg-charcoal-soft disabled:cursor-not-allowed disabled:bg-ink/30"
       >
         {disabled ? "Out of Stock" : reserved ? "Request Sent" : "Add to Cart"}
       </button>

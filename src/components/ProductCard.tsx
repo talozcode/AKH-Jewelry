@@ -24,12 +24,12 @@ export function ProductCard({ product }: { product: Product }) {
           ) : null}
 
           {product.availability !== "In Stock" ? (
-            <span className="absolute left-3 top-3 bg-charcoal/90 px-2 py-1 text-[10px] uppercase tracking-[0.12em] text-ivory">
+            <span className="absolute left-3 top-3 border border-ivory/70 bg-ink/40 px-2 py-1 text-[10px] text-ivory backdrop-blur-sm">
               {product.availability}
             </span>
           ) : null}
           {product.limitedEdition ? (
-            <span className="absolute left-3 bottom-3 bg-copper/90 px-2 py-1 text-[10px] uppercase tracking-[0.12em] text-ivory">
+            <span className="absolute left-3 bottom-3 border border-ivory/70 bg-ink/40 px-2 py-1 text-[10px] text-ivory backdrop-blur-sm">
               One of one
             </span>
           ) : null}
@@ -49,9 +49,9 @@ export function ProductCard({ product }: { product: Product }) {
 
       <Link href={`/product/${product.slug}`} className="mt-3 block">
         <h3 className="font-display text-base text-ink">{product.name}</h3>
-        <p className="mt-1 text-xs uppercase tracking-[0.1em] text-mineral">
+        <p className="mt-1 text-xs text-mineral">
           {product.material.split(",")[0].split("(")[0].trim()}
-          {product.stone ? ` · ${product.stone.split(",")[0]}` : ""}
+          {product.stone ? `, ${product.stone.split(",")[0].toLowerCase()}` : ""}
         </p>
         <p className="mt-1.5 text-sm text-ink/80">{formatPrice(product)}</p>
       </Link>

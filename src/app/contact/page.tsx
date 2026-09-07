@@ -9,7 +9,6 @@ export const metadata: Metadata = {
 export default function ContactPage() {
   return (
     <SimplePage
-      eyebrow="Contact"
       title="Get in touch"
       intro="For orders, bespoke enquiries, press or repairs, email the studio directly — we read and reply to every message ourselves."
     >

@@ -7,10 +7,10 @@ export const metadata: Metadata = {
 };
 
 const STEPS = [
-  ["01", "Share your idea", "Email hello@akhjewelry.com with the meaning, occasion or reference behind the piece."],
-  ["02", "Select materials and stones", "Choose metal and stone from our sourced selection, or bring your own stone to be set."],
-  ["03", "Approve the design", "Review a hand-drawn concept and a 3D render before any metal is cast."],
-  ["04", "Your piece is handcrafted", "Carved, cast, set and finished on our bench, then shipped with its own care card."],
+  ["Share your idea", "Email hello@akhjewelry.com with the meaning, occasion or reference behind the piece."],
+  ["Select materials and stones", "Choose metal and stone from our sourced selection, or bring your own stone to be set."],
+  ["Approve the design", "Review a hand-drawn concept and a 3D render before any metal is cast."],
+  ["Your piece is handcrafted", "Carved, cast, set and finished on our bench, then shipped with its own care card."],
 ];
 
 export default function BespokePage() {
@@ -23,23 +23,22 @@ export default function BespokePage() {
         </div>
         <div className="absolute inset-0 bg-gradient-to-t from-charcoal via-charcoal/50 to-charcoal/20" />
         <div className="relative mx-auto w-full max-w-5xl px-4 pb-14 sm:px-6 lg:px-8">
-          <p className="text-xs uppercase tracking-[0.16em] text-copper-soft">Bespoke</p>
-          <h1 className="mt-3 max-w-xl font-display text-4xl leading-tight sm:text-5xl">
+          <h1 className="max-w-xl font-display text-4xl leading-tight sm:text-5xl">
             A piece made only for you.
           </h1>
         </div>
       </section>
 
       <section className="mx-auto max-w-5xl px-4 py-16 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-4">
-          {STEPS.map(([n, title, copy]) => (
-            <div key={n}>
-              <span className="font-display text-3xl text-copper">{n}</span>
-              <h2 className="mt-3 text-base">{title}</h2>
+        <ol className="grid grid-cols-1 gap-x-10 gap-y-10 border-t border-ink/10 pt-10 sm:grid-cols-2 lg:grid-cols-4">
+          {STEPS.map(([title, copy], i) => (
+            <li key={title} className="border-l border-ink/15 pl-5">
+              <span className="text-sm text-mineral">{i + 1}</span>
+              <h2 className="mt-2 text-base">{title}</h2>
               <p className="mt-2 text-sm text-ink/70">{copy}</p>
-            </div>
+            </li>
           ))}
-        </div>
+        </ol>
 
         <div className="mt-16 border-t border-ink/10 pt-10 text-center">
           <h2 className="font-display text-2xl">Ready to begin?</h2>
@@ -49,9 +48,9 @@ export default function BespokePage() {
           </p>
           <a
             href="mailto:hello@akhjewelry.com?subject=Bespoke Enquiry"
-            className="mt-6 inline-block bg-ink px-8 py-4 text-sm uppercase tracking-[0.14em] text-ivory hover:bg-copper"
+            className="mt-6 inline-block border border-ink px-8 py-4 text-sm text-ink transition hover:bg-ink hover:text-ivory"
           >
-            Begin a Bespoke Piece
+            Begin a bespoke piece
           </a>
         </div>
       </section>

@@ -77,8 +77,7 @@ export function ShopClient() {
   return (
     <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
       <div className="mb-8">
-        <p className="text-xs uppercase tracking-[0.16em] text-copper">Shop</p>
-        <h1 className="mt-2 font-display text-3xl sm:text-4xl">The Full Collection</h1>
+        <h1 className="font-display text-3xl sm:text-4xl">The full collection</h1>
       </div>
 
       <div className="mb-6 flex flex-wrap items-center gap-2 border-b border-ink/10 pb-4">

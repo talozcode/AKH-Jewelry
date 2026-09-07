@@ -15,9 +15,9 @@ export default function CartPage() {
       </p>
       <Link
         href="/shop"
-        className="mt-8 inline-block bg-ink px-8 py-4 text-sm uppercase tracking-[0.14em] text-ivory hover:bg-copper"
+        className="mt-8 inline-block border border-ink px-8 py-4 text-sm text-ink transition hover:bg-ink hover:text-ivory"
       >
-        Shop the Collection
+        Shop the collection
       </Link>
     </div>
   );

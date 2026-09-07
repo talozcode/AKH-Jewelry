@@ -80,9 +80,12 @@ export default async function ProductPage(props: PageProps<"/product/[slug]">) {
 
         <div id="purchase">
           <h1 className="font-display text-3xl">{product.name}</h1>
-          <p className="mt-1 text-sm uppercase tracking-[0.1em] text-mineral">{product.tagline}</p>
+          <p className="mt-1 font-display text-base italic text-mineral">{product.tagline}</p>
           <p className="mt-4 text-2xl text-ink">{formatPrice(product)}</p>
           <p className="mt-3 max-w-prose text-sm leading-relaxed text-ink/75">{product.description}</p>
+          <blockquote className="mt-4 max-w-prose border-l-2 border-copper/50 pl-4 text-sm leading-relaxed text-ink/60 italic">
+            {product.story}
+          </blockquote>
 
           <dl className="mt-6 grid grid-cols-2 gap-y-2 border-t border-ink/10 pt-5 text-sm">
             <dt className="text-ink/50">Material</dt>
@@ -112,7 +115,6 @@ export default async function ProductPage(props: PageProps<"/product/[slug]">) {
           <div className="mt-10">
             <Accordion
               items={[
-                { title: "Story & Inspiration", content: product.story },
                 { title: "Materials & Craftsmanship", content: product.craftsmanship },
                 {
                   title: "Sizing",
