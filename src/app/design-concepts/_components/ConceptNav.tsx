@@ -5,6 +5,7 @@ const LINKS = [
   { href: "#concept-b", label: "B — Talisman" },
   { href: "#concept-c", label: "C — Rooted" },
   { href: "#concept-d", label: "D — One of One" },
+  { href: "#concept-e", label: "E — Gallery" },
 ];
 
 export function ConceptNav() {
