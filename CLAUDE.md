@@ -15,11 +15,21 @@ full requirements — this file tracks what's actually built.
 
 ## Design system
 
-Defined as CSS custom properties in `src/app/globals.css` / Tailwind `@theme`:
-charcoal (`--color-charcoal`) for dark editorial sections, warm ivory
-(`--color-ivory`) for shop/product sections, burnished copper (`--color-copper`)
-as the accent, plus stone/mineral neutrals. Do not add new one-off colors —
-extend this token set instead.
+Defined as CSS custom properties in `src/app/globals.css` / Tailwind `@theme`.
+**As of 2026-09-07 this is a warm, earthy palette** — deliberately NOT the
+cold charcoal/black "dark editorial gallery" look the written brief first
+suggested. The user shared real photos of AKH's actual packaging (an olive
+satin drawstring pouch, a warm taupe gift box, a blush/kraft shopping bag
+with brass-toned ribbon, all under a casual handwritten "akh." wordmark) and
+asked for the site to feel like that instead. The token names kept their
+original names (`charcoal`, `copper`, etc.) but the hex values were retuned:
+`--color-charcoal` is now a warm deep olive-brown (not near-black),
+`--color-copper` is now an olive-brass accent (not rust copper). If the brief
+document and this real packaging direction ever conflict again, the
+packaging direction wins — it's what the actual brand looks like.
+The wordmark uses a script font (Caveat, `font-script` utility) matching the
+real logo's handwritten mark; Fraunces remains the display serif for
+headlines. Do not add new one-off colors — extend this token set instead.
 
 ## Images (important — read before touching image code)
 
@@ -41,7 +51,13 @@ extend this token set instead.
   see `src/lib/stockImages.ts`. Pexels' license permits free commercial use,
   no attribution required. These are clearly generic mood shots, never
   presented as a specific real person (no fake "founder photo", no photos
-  attached to the text-only testimonials).
+  attached to the text-only testimonials). Chosen for warm, sunlit, candid
+  tones to match the real packaging direction above — not moody/desaturated.
+- The user has real photos of AKH's actual packaging and at least one real
+  on-body product shot (shared in chat, not saved as files this session has
+  access to). If the user provides them as files/URLs later, prefer them
+  over the Pexels placeholders immediately — they're more valuable than any
+  stock photo.
 - The old `PlaceholderArt` SVG-placeholder system from the first pass has been
   removed now that real product photos are wired in.
 

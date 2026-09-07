@@ -1,16 +1,19 @@
 @import "tailwindcss";
 
 :root {
-  --color-charcoal: #17140f;
-  --color-charcoal-soft: #201c15;
-  --color-ivory: #f4eee3;
-  --color-ivory-deep: #ece3d3;
-  --color-stone: #d8cdb9;
-  --color-copper: #b0602f;
-  --color-copper-soft: #c9825a;
-  --color-mineral: #837a6a;
-  --color-mineral-light: #a89f8d;
-  --color-ink: #1c1812;
+  /* Warm, earthy palette matched to AKH's real packaging (olive satin pouch,
+     taupe gift box, blush/kraft shopping bag, brass thread) — deliberately
+     NOT a cold charcoal/black gallery palette. See CLAUDE.md. */
+  --color-charcoal: #2c2a1d;
+  --color-charcoal-soft: #383523;
+  --color-ivory: #f6efe3;
+  --color-ivory-deep: #ecdfc8;
+  --color-stone: #d6c8ab;
+  --color-copper: #767a4d;
+  --color-copper-soft: #999a68;
+  --color-mineral: #83795f;
+  --color-mineral-light: #a89c7c;
+  --color-ink: #29230f;
 }
 
 @theme inline {
@@ -27,6 +30,7 @@
 
   --font-display: var(--font-fraunces);
   --font-sans: var(--font-inter);
+  --font-script: var(--font-caveat);
 }
 
 html {
@@ -48,22 +52,12 @@ body {
   font-family: var(--font-display);
 }
 
+.font-script {
+  font-family: var(--font-script);
+}
+
 /* Fine hairline rule used throughout for an editorial, sculptural feel */
 .hairline {
   border-color: currentColor;
   opacity: 1;
-}
-
-@keyframes shimmer {
-  0% {
-    background-position: -200% 0;
-  }
-  100% {
-    background-position: 200% 0;
-  }
-}
-
-.placeholder-art {
-  background-size: 200% 200%;
-  animation: shimmer 8s ease-in-out infinite;
 }

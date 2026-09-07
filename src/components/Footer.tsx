@@ -36,9 +36,7 @@ export function Footer() {
       <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
         <div className="grid grid-cols-2 gap-10 md:grid-cols-5">
           <div className="col-span-2 md:col-span-2">
-            <span className="font-display text-2xl">
-              akh<span className="text-copper-soft">.</span>
-            </span>
+            <span className="font-script text-3xl">akh.</span>
             <p className="mt-4 max-w-xs text-sm leading-relaxed text-ivory/60">
               An independent jewelry studio. Sculptural pieces handcrafted in limited
               quantities, shaped by natural materials, personal symbolism and the

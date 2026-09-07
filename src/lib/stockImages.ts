@@ -11,10 +11,10 @@ function pexels(id: string, w = 1600) {
 }
 
 export const STOCK = {
-  heroEditorial: pexels("34929993", 1800),
-  finalMoment: pexels("37586698", 1800),
-  brandStoryProcess: pexels("32076602", 1400),
+  heroEditorial: pexels("17892893", 1800),
+  finalMoment: pexels("33513895", 1800),
+  brandStoryProcess: pexels("16534488", 1400),
   craftsmanshipHands: pexels("32076602", 1200),
-  craftsmanshipTools: pexels("18425416", 1200),
-  bespokeEditorial: pexels("6318023", 1800),
+  craftsmanshipTools: pexels("36290395", 1200),
+  bespokeEditorial: pexels("34549914", 1800),
 };

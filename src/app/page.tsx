@@ -45,7 +45,7 @@ export default function Home() {
           <img
             src={STOCK.heroEditorial}
             alt=""
-            className="h-full w-full object-cover opacity-70 grayscale"
+            className="h-full w-full object-cover opacity-80"
           />
         </div>
         <div className="absolute inset-0 bg-gradient-to-t from-charcoal via-charcoal/50 to-charcoal/10" />

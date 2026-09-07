@@ -64,7 +64,7 @@ export function PurchaseArea({ product }: { product: Product }) {
         <li>{product.dispatch}</li>
         <li>Free returns within 14 days on in-stock pieces</li>
         <li>Secure payment via Stripe at checkout launch</li>
-        <li>Arrives in a signed AKH studio box with authenticity card</li>
+        <li>Arrives in an AKH gift box with a satin pouch, in our branded bag</li>
         <li>International orders may be subject to local customs duties</li>
       </ul>
     </div>
