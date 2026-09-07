@@ -19,13 +19,18 @@ const roundedFraunces = { fontFamily: "var(--font-fraunces)", fontVariationSetti
 
 export function ConceptC() {
   return (
-    <section className={`${karla.className} scroll-mt-16`}>
+    <section
+      className={`${karla.className} relative scroll-mt-16 overflow-hidden`}
+      style={{ backgroundColor: SAND, color: UMBER }}
+    >
       <ConceptLabel
         id="concept-c"
         title="C — Rooted (connected to the earth)"
         rationale="Terracotta and sage, circular crops, imperfect alignment — the tactile, earth-connected reading of handmade, pulling on the studio's own craftsmanship photography."
+        titleStyle={{ ...roundedFraunces, fontSize: "1.5rem", color: UMBER }}
+        mutedStyle={{ fontSize: "0.9rem", color: `${UMBER}99` }}
       />
-      <div style={{ backgroundColor: SAND, color: UMBER }} className="relative overflow-hidden">
+      <div>
         <div className="mx-auto grid max-w-6xl grid-cols-1 items-center gap-10 px-6 py-16 lg:grid-cols-2">
           <div className="relative">
             <h3 style={{ ...roundedFraunces, fontSize: "2.75rem", lineHeight: 1.1 }}>

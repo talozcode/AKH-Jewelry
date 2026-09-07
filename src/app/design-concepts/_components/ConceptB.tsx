@@ -17,13 +17,15 @@ const RUST = "#7a3324";
 
 export function ConceptB() {
   return (
-    <section className="scroll-mt-16">
+    <section className="scroll-mt-16" style={{ backgroundColor: SOOT, color: BONE }}>
       <ConceptLabel
         id="concept-b"
         title="B — Talisman (ritual object)"
         rationale="A dark, reverent register — soot and bone, one object lit like a museum vitrine. 'Talisman' through presentation and materiality, not borrowed symbols."
+        titleStyle={{ fontFamily: italiana.style.fontFamily, fontSize: "1.5rem", color: BONE }}
+        mutedStyle={{ fontFamily: cormorant.style.fontFamily, fontSize: "0.9rem", color: `${BONE}99` }}
       />
-      <div style={{ backgroundColor: SOOT, color: BONE }}>
+      <div>
         <div className="mx-auto grid max-w-6xl grid-cols-1 items-center gap-10 px-6 py-16 lg:grid-cols-[1fr_1.1fr]">
           <div>
             <h3 className={italiana.className} style={{ fontSize: "2.75rem", lineHeight: 1.1 }}>
