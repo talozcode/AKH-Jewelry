@@ -235,7 +235,7 @@ export const products: Product[] = [
     material: "9–14k yellow gold, 40mm chain",
     stone: "1.14ct Nigerian emerald, CGRL certified",
     measurements: "40mm chain; 14/18k or other lengths priced accordingly",
-    availability: "In Stock",
+    availability: "Made to Order",
     dispatch: "Handcrafted to order",
     limitedEdition: "One-of-one stone",
     images: ["a5d14ff0ef8d4873b925fc364c68c23f.jpeg"],
@@ -255,7 +255,7 @@ export const products: Product[] = [
     material: "14k yellow gold (18k available), 40mm chain",
     stone: "3.56ct pear-shape Nigerian emerald, CGRL certified",
     measurements: "40mm chain; 18k or other lengths priced accordingly",
-    availability: "In Stock",
+    availability: "Made to Order",
     dispatch: "Handcrafted to order",
     limitedEdition: "One-of-one stone",
     images: [

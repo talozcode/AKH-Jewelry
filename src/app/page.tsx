@@ -4,10 +4,10 @@ import { ProductImage } from "@/components/ProductImage";
 import { products } from "@/lib/products";
 import { STOCK } from "@/lib/stockImages";
 
-const FEATURED = ["vahavta-ring", "emerald-pendant", "anemone", "maslul"];
+const FEATURED = ["vahavta-ring", "hai-pendant", "anemone", "maslul"];
 
 const CATEGORY_TILES = [
-  { name: "Rings", href: "/shop?category=Rings", blurb: "Sculptural bands, sized to order.", image: products.find((p) => p.slug === "anemone")!.images[0] },
+  { name: "Rings", href: "/shop?category=Rings", blurb: "Sculptural bands, sized to order.", image: products.find((p) => p.slug === "levone")!.images[0] },
   { name: "Necklaces", href: "/shop?category=Necklaces", blurb: "Pendants and chains, everyday to certified stones.", image: products.find((p) => p.slug === "maslul")!.images[0] },
   { name: "Bracelets", href: "/shop?category=Bracelets", blurb: "One bangle, cast solid and set with spinel.", image: products.find((p) => p.slug === "tsil-bangle")!.images[0] },
 ];
@@ -37,7 +37,7 @@ const PROCESS = [
   "Finished on one bench",
 ];
 
-const HERO_PRODUCT = "emerald-pendant";
+const HERO_PRODUCT = "anemone";
 const FINAL_MOMENT_PRODUCT = "cala";
 
 export default function Home() {
