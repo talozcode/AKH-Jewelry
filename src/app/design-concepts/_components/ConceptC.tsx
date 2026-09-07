@@ -49,7 +49,13 @@ export function ConceptC() {
             </a>
           </div>
           <div className="relative mx-auto aspect-square w-full max-w-sm -rotate-2 overflow-hidden rounded-full border-8" style={{ borderColor: CLAY }}>
-            <ProductImage idExt={heroProduct.images[0]} alt={heroProduct.name} w={1000} h={1000} />
+            <ProductImage
+              idExt={heroProduct.images[0]}
+              alt={heroProduct.name}
+              w={1000}
+              h={1000}
+              className="sepia-[35%] saturate-150 contrast-105"
+            />
           </div>
         </div>
 
@@ -58,7 +64,7 @@ export function ConceptC() {
             {cardProducts.map((p, i) => (
               <div key={p.slug} className={i % 2 === 0 ? "rotate-1" : "-rotate-1"}>
                 <div className="mx-auto aspect-square w-4/5 overflow-hidden rounded-full border-4" style={{ borderColor: SAGE }}>
-                  <ProductImage idExt={p.images[0]} alt={p.name} w={700} h={700} />
+                  <ProductImage idExt={p.images[0]} alt={p.name} w={700} h={700} className="sepia-[35%] saturate-150 contrast-105" />
                 </div>
                 <p className="mt-4 text-center text-base" style={{ ...roundedFraunces }}>
                   {p.name}

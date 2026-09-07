@@ -45,7 +45,13 @@ export function ConceptB() {
           </div>
           <div className="aspect-[4/5] border p-2" style={{ borderColor: `${BONE}40` }}>
             <div className="h-full w-full overflow-hidden">
-              <ProductImage idExt={heroProduct.images[0]} alt={heroProduct.name} w={800} h={1400} />
+              <ProductImage
+                idExt={heroProduct.images[0]}
+                alt={heroProduct.name}
+                w={800}
+                h={1400}
+                className="grayscale contrast-125 brightness-75"
+              />
             </div>
           </div>
         </div>
@@ -56,7 +62,7 @@ export function ConceptB() {
               <div key={p.slug}>
                 <div className="aspect-square border p-1.5" style={{ borderColor: `${BONE}30` }}>
                   <div className="h-full w-full overflow-hidden">
-                    <ProductImage idExt={p.images[0]} alt={p.name} />
+                    <ProductImage idExt={p.images[0]} alt={p.name} className="grayscale contrast-125 brightness-75" />
                   </div>
                 </div>
                 <p className={cormorant.className} style={{ fontStyle: "italic", marginTop: "0.9rem", fontSize: "1rem", color: `${BONE}cc` }}>

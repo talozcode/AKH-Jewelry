@@ -45,7 +45,7 @@ export function ConceptD() {
             </a>
           </div>
           <div className="border p-2" style={{ borderColor: RULE }}>
-            <div className="aspect-[4/5] w-full grayscale-[30%] sepia-[15%]">
+            <div className="aspect-[4/5] w-full grayscale-[55%] sepia-[30%] contrast-110">
               <ProductImage idExt={heroProduct.images[0]} alt={heroProduct.name} w={500} h={625} />
             </div>
           </div>
@@ -59,7 +59,7 @@ export function ConceptD() {
                 className="grid grid-cols-[auto_1fr_auto] items-center gap-4 py-5"
                 style={{ borderBottom: `1px solid ${RULE}` }}
               >
-                <span className="h-16 w-16 shrink-0 overflow-hidden border grayscale-[30%] sepia-[15%]" style={{ borderColor: RULE }}>
+                <span className="h-16 w-16 shrink-0 overflow-hidden border grayscale-[55%] sepia-[30%] contrast-110" style={{ borderColor: RULE }}>
                   <ProductImage idExt={p.images[0]} alt={p.name} w={200} h={200} />
                 </span>
                 <div>
