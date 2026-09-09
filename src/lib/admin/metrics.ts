@@ -1,5 +1,6 @@
 import { supabaseAdmin } from "../supabase/server";
 import { getMostReservedProducts, getReservationCountsByStatus } from "../db/reservations";
+import { getOrderCountsByStatus, getOrders, getRevenueByCurrency } from "../db/orders";
 
 export async function getProductCounts() {
   const { data, error } = await supabaseAdmin().from("products").select("category, availability, is_published");
@@ -32,11 +33,15 @@ export async function getRecentReservations(limit = 5) {
 }
 
 export async function getDashboardMetrics() {
-  const [products, reservationStatusCounts, mostReserved, recentReservations] = await Promise.all([
-    getProductCounts(),
-    getReservationCountsByStatus(),
-    getMostReservedProducts(5),
-    getRecentReservations(5),
-  ]);
-  return { products, reservationStatusCounts, mostReserved, recentReservations };
+  const [products, reservationStatusCounts, mostReserved, recentReservations, orderStatusCounts, revenueByCurrency, recentOrders] =
+    await Promise.all([
+      getProductCounts(),
+      getReservationCountsByStatus(),
+      getMostReservedProducts(5),
+      getRecentReservations(5),
+      getOrderCountsByStatus(),
+      getRevenueByCurrency(),
+      getOrders().then((orders) => orders.slice(0, 5)),
+    ]);
+  return { products, reservationStatusCounts, mostReserved, recentReservations, orderStatusCounts, revenueByCurrency, recentOrders };
 }

@@ -309,13 +309,55 @@ this section is the living reference. Schema in
   owner-managed at `/admin/collections`, empty until the owner creates
   the first one
 
+## Checkout / payments (built 2026-09-09)
+
+Real Stripe Checkout — the site is a working e-commerce store, not a
+reservation-only enquiry funnel. "Buy Now" on a product page
+(`PurchaseArea.tsx`) redirects to a **hosted** Stripe Checkout Session
+(`src/lib/actions/checkout.ts`'s `createCheckoutSession()`) — no
+`@stripe/stripe-js`/Elements anywhere, the browser never loads Stripe.js,
+it's a pure redirect to `session.url` and back. One product (+ selected
+size) per checkout — **no multi-item cart** (`/cart` stays the same
+placeholder it's always been, deliberately).
+
+- **New `orders` table** (`supabase/migrations/0003_orders.sql`),
+  separate from `reservations` (which stays exactly as-is, a
+  now-secondary no-payment feature, not deleted). Snapshot fields
+  (product name/slug/price/currency), flat shipping-address columns, a
+  `stripe_checkout_session_id` unique constraint as the idempotency guard
+  against webhook retries, and a `status` (`unfulfilled`/`shipped` —
+  fulfillment state, not payment state; a row only ever exists for a
+  session that already paid).
+- **Webhook**: `src/app/api/webhooks/stripe/route.ts` (this repo's first
+  API Route Handler). Verifies `stripe-signature` against
+  `STRIPE_WEBHOOK_SECRET` using the **raw** request body (`req.text()`,
+  never `req.json()` first). On `checkout.session.completed`, inserts one
+  `orders` row and — the important business rule — **auto-flips an "In
+  Stock" product to "Out of Stock" the instant payment confirms**, so a
+  physical one-of-one piece can't be sold twice. "Made to Order" pieces
+  are never flipped (no fixed inventory; they go through the exact same
+  instant checkout, lead time is just dispatch-copy messaging).
+- **No shipping fee** (free worldwide shipping, per the user's decision)
+  and **no automatic tax** (Stripe Tax off) — prices charge exactly as
+  shown on the site. A shipping address IS still collected (physical
+  goods), across Stripe's full supported country list.
+- **Env vars**: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` — the
+  webhook secret can only be obtained AFTER this route is deployed and
+  registered against a real HTTPS URL in the Stripe Dashboard (hard
+  sequencing constraint, not a style choice). Build/test against a
+  Stripe **test-mode** key first.
+- `src/app/(site)/order/success/page.tsx` reads the Checkout Session
+  directly from Stripe's API (not the `orders` table — the webhook may
+  not have run yet by the time the browser redirects back).
+- `/admin/orders` (mirrors `/admin/reservations`'s exact pattern) lists
+  paid orders with shipping address, lets the owner mark shipped. The
+  dashboard now shows real revenue (grouped by currency, never summed
+  across ILS/USD) and unfulfilled-order counts — this replaces the
+  earlier explicit "no revenue numbers, inventing one would be a lie"
+  stance, which was always conditional on real payment data existing.
+
 ## What's stubbed / explicitly NOT built yet
 
-- **Checkout/payments**: decided with the user (2026-09-07) to use custom
-  Stripe Checkout eventually, but NOT built yet. "Add to Cart" now submits
-  a real reservation (see "CMS" above) and points to the CMS-editable
-  contact email; there is no cart state, no payment processing, no
-  automated order backend beyond the reservation record.
 - Analytics/conversion tracking, abandoned-cart email, wishlist persistence
   (the heart icon toggles local state only, nothing is saved), search
   (icon is present, not wired), account pages, real newsletter signup (form
@@ -341,8 +383,12 @@ than editing code now that the CMS exists.
   with the shop owner (locally in `.env.local` and on Vercel).
 - Create the first real collection(s) through `/admin/collections` — the
   entity exists and is wired end-to-end but starts empty.
-- Wire Stripe Checkout once the user confirms it's time (reservations now
-  give real orders somewhere to live; payment collection is still manual).
+- Register the production webhook URL in the Stripe Dashboard and set
+  the real `STRIPE_WEBHOOK_SECRET` on Vercel once deployed (see
+  "Checkout / payments" above) — orders won't record and inventory won't
+  auto-update until this is done.
+- Go live: swap the test-mode `STRIPE_SECRET_KEY` for a real one once the
+  user has confirmed end-to-end testing looks right.
 - Phase 2: stronger brand story content, real testimonials/press (current
   testimonials are illustrative placeholder quotes, clearly not tied to real
   named customers or photos), full bespoke request form
