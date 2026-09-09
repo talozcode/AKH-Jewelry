@@ -1,11 +1,15 @@
 import type { Metadata } from "next";
-import { Fraunces, Inter, Caveat } from "next/font/google";
+import { Cormorant_Garamond, Inter, Caveat } from "next/font/google";
 import "./globals.css";
 
-const fraunces = Fraunces({
-  variable: "--font-fraunces",
+// Editorial headline serif per the AKH design brief (Cormorant Garamond,
+// with EB Garamond as the named alternative). Deliberately not the
+// handwritten logo font — that stays scoped to the wordmark only.
+const cormorant = Cormorant_Garamond({
+  variable: "--font-cormorant",
   subsets: ["latin"],
-  axes: ["opsz", "SOFT", "WONK"],
+  weight: ["400", "500", "600"],
+  style: ["normal", "italic"],
 });
 
 const inter = Inter({
@@ -24,15 +28,15 @@ const caveat = Caveat({
 export const metadata: Metadata = {
   metadataBase: new URL("https://akh-jewelry.vercel.app"),
   title: {
-    default: "AKH — Sculptural Handcrafted Jewelry",
+    default: "AKH — Objects of Light",
     template: "%s | AKH Jewelry",
   },
   description:
-    "AKH is an independent jewelry studio making sculptural pieces in limited quantities, shaped by material, meaning and instinct.",
+    "AKH is an independent jewelry studio. Jewelry shaped by transformation, time and the beauty of imperfection.",
   openGraph: {
-    title: "AKH — Sculptural Handcrafted Jewelry",
+    title: "AKH — Objects of Light",
     description:
-      "Sculptural pieces handcrafted in limited quantities, shaped by natural materials, personal symbolism and the character of each stone.",
+      "Jewelry shaped by transformation, time and the beauty of imperfection.",
     siteName: "AKH Jewelry",
     type: "website",
   },
@@ -44,7 +48,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${fraunces.variable} ${inter.variable} ${caveat.variable}`}>
+    <html lang="en" className={`${cormorant.variable} ${inter.variable} ${caveat.variable}`}>
       <body className="flex min-h-screen flex-col bg-ivory text-ink antialiased">{children}</body>
     </html>
   );

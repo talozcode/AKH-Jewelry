@@ -1,19 +1,21 @@
 @import "tailwindcss";
 
 :root {
-  /* Warm, earthy palette matched to AKH's real packaging (olive satin pouch,
-     taupe gift box, blush/kraft shopping bag, brass thread) — deliberately
-     NOT a cold charcoal/black gallery palette. See CLAUDE.md. */
-  --color-charcoal: #2c2a1d;
-  --color-charcoal-soft: #383523;
-  --color-ivory: #f6efe3;
-  --color-ivory-deep: #ecdfc8;
-  --color-stone: #d6c8ab;
-  --color-copper: #767a4d;
-  --color-copper-soft: #999a68;
-  --color-mineral: #83795f;
-  --color-mineral-light: #a89c7c;
-  --color-ink: #29230f;
+  /* "Quiet objects of light" — exact palette from the AKH Website Design
+     Brief (2026-09-07). Warm Bone / Stone / Deep Olive / Sage Olive / Khaki
+     / Soft Black, plus a small Aged Brass metallic accent used sparingly
+     (~5-10% of the visual system — the jewelry itself provides the gold). */
+  --color-charcoal: #34392c; /* Deep Olive — primary dark, primary button fill */
+  --color-charcoal-soft: #454b39;
+  --color-ivory: #f3efe7; /* Warm Bone — main background */
+  --color-ivory-deep: #d8d0c3; /* Stone — alternate background */
+  --color-stone: #d8d0c3;
+  --color-copper: #747861; /* Sage Olive — brand accent */
+  --color-copper-soft: #999174; /* Khaki — secondary accent */
+  --color-mineral: #857f68;
+  --color-mineral-light: #a79f87;
+  --color-ink: #20211d; /* Soft Black — text */
+  --color-brass: #a68c59; /* Aged Brass — small metallic accent only */
 }
 
 @theme inline {
@@ -27,8 +29,9 @@
   --color-mineral: var(--color-mineral);
   --color-mineral-light: var(--color-mineral-light);
   --color-ink: var(--color-ink);
+  --color-brass: var(--color-brass);
 
-  --font-display: var(--font-fraunces);
+  --font-display: var(--font-cormorant);
   --font-sans: var(--font-inter);
   --font-script: var(--font-caveat);
 }
