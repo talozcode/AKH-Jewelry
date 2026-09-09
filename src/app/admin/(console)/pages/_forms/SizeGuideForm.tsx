@@ -27,7 +27,7 @@ export function SizeGuideForm({ content: initial }: { content: SizeGuideContent 
       {field("Heading", <input className={inputClass} value={content.heading} onChange={(e) => setContent((c) => ({ ...c, heading: e.target.value }))} />)}
       {field("Intro", <textarea className={textareaClass} value={content.intro} onChange={(e) => setContent((c) => ({ ...c, intro: e.target.value }))} />)}
       <div>
-        <span className="block text-xs uppercase tracking-[0.08em] text-ink/50">Size chart</span>
+        <span className="block text-xs font-medium uppercase tracking-wide text-slate-500">Size chart</span>
         <div className="mt-2 space-y-2">
           {content.sizes.map((size, i) => (
             <div key={i} className="flex items-center gap-2">
@@ -38,13 +38,13 @@ export function SizeGuideForm({ content: initial }: { content: SizeGuideContent 
                 value={size.circumference}
                 onChange={(e) => updateSize(i, { circumference: e.target.value })}
               />
-              <button type="button" onClick={() => removeSize(i)} className="px-2 text-xs text-ink/50 hover:text-red-700">
+              <button type="button" onClick={() => removeSize(i)} className="px-2 text-xs text-slate-500 hover:text-red-600">
                 Remove
               </button>
             </div>
           ))}
         </div>
-        <button type="button" onClick={addSize} className="mt-3 border border-ink/20 px-4 py-2 text-sm hover:border-ink">
+        <button type="button" onClick={addSize} className="mt-3 rounded-md border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">
           + Add size
         </button>
       </div>

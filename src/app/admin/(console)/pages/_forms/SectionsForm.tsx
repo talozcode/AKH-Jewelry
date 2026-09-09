@@ -27,10 +27,10 @@ export function SectionsForm({ content: initial }: { content: SectionsContent })
       {field("Page heading", <input className={inputClass} value={content.heading} onChange={(e) => setContent((c) => ({ ...c, heading: e.target.value }))} />)}
       <div className="space-y-4">
         {content.sections.map((section, i) => (
-          <div key={i} className="border border-ink/15 p-4">
+          <div key={i} className="rounded-md border border-slate-200 p-4">
             <div className="flex items-center justify-between">
-              <span className="text-xs text-ink/40">Section {i + 1}</span>
-              <button type="button" onClick={() => removeSection(i)} className="text-xs text-ink/50 hover:text-red-700">
+              <span className="text-xs text-slate-400">Section {i + 1}</span>
+              <button type="button" onClick={() => removeSection(i)} className="text-xs text-slate-500 hover:text-red-600">
                 Remove
               </button>
             </div>
@@ -49,7 +49,7 @@ export function SectionsForm({ content: initial }: { content: SectionsContent })
           </div>
         ))}
       </div>
-      <button type="button" onClick={addSection} className="border border-ink/20 px-4 py-2 text-sm hover:border-ink">
+      <button type="button" onClick={addSection} className="rounded-md border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">
         + Add section
       </button>
       <SaveBar saving={saving} saved={saved} error={error} />

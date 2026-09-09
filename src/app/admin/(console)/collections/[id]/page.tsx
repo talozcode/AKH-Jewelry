@@ -17,7 +17,7 @@ export default async function EditCollectionPage({ params }: { params: Promise<{
 
   return (
     <div>
-      <h1 className="text-2xl font-medium">{collection.name}</h1>
+      <h1 className="text-2xl font-semibold text-slate-900">{collection.name}</h1>
       <div className="mt-8">
         <CollectionForm collection={collection} allProducts={allProducts} mediaAssets={mediaAssets} />
       </div>

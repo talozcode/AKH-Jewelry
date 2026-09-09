@@ -44,10 +44,10 @@ export function ImageManager({
     <div>
       <div className="flex flex-wrap gap-3">
         {images.map((img, i) => (
-          <div key={img + i} className="relative w-28 border border-ink/15 bg-ivory-deep/40 p-1">
+          <div key={img + i} className="relative w-28 rounded-md border border-slate-200 bg-slate-50 p-1">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={wixImg(img, 300, 375)} alt="" className="h-32 w-full object-cover" />
-            <div className="mt-1 flex items-center justify-between text-xs text-ink/60">
+            <img src={wixImg(img, 300, 375)} alt="" className="h-32 w-full rounded object-cover" />
+            <div className="mt-1 flex items-center justify-between text-xs text-slate-500">
               <button type="button" onClick={() => move(i, -1)} disabled={i === 0} className="disabled:opacity-30">
                 ←
               </button>
@@ -59,13 +59,13 @@ export function ImageManager({
             <button
               type="button"
               onClick={() => remove(i)}
-              className="mt-1 w-full border border-ink/15 py-0.5 text-xs text-ink/60 hover:border-red-700 hover:text-red-700"
+              className="mt-1 w-full rounded-md border border-slate-200 py-0.5 text-xs text-slate-500 hover:border-red-300 hover:text-red-600"
             >
               Remove
             </button>
           </div>
         ))}
-        <label className="flex w-28 h-32 cursor-pointer flex-col items-center justify-center border border-dashed border-ink/25 text-center text-xs text-ink/50 hover:border-ink/50">
+        <label className="flex h-32 w-28 cursor-pointer flex-col items-center justify-center rounded-md border border-dashed border-slate-300 text-center text-xs text-slate-400 hover:border-slate-400">
           {uploading ? "Uploading…" : "+ Add photo"}
           <input
             type="file"
@@ -80,8 +80,8 @@ export function ImageManager({
           />
         </label>
       </div>
-      {error ? <p className="mt-2 text-sm text-red-700">{error}</p> : null}
-      <p className="mt-2 text-xs text-ink/50">
+      {error ? <p className="mt-2 text-sm text-red-600">{error}</p> : null}
+      <p className="mt-2 text-xs text-slate-400">
         First photo is the primary image shown on the shop grid and homepage. Photos are resized to
         1800px on upload.
       </p>

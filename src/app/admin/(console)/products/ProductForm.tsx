@@ -46,14 +46,15 @@ function slugify(name: string) {
 function field(label: string, input: React.ReactNode, hint?: string) {
   return (
     <label className="block">
-      <span className="block text-xs uppercase tracking-[0.08em] text-ink/50">{label}</span>
+      <span className="block text-xs font-medium uppercase tracking-wide text-slate-500">{label}</span>
       {input}
-      {hint ? <span className="mt-1 block text-xs text-ink/40">{hint}</span> : null}
+      {hint ? <span className="mt-1 block text-xs text-slate-400">{hint}</span> : null}
     </label>
   );
 }
 
-const inputClass = "mt-1 w-full border border-ink/20 bg-ivory px-3 py-2 text-sm outline-none focus:border-ink";
+const inputClass =
+  "mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500";
 const textareaClass = inputClass + " min-h-24";
 
 export function ProductForm({ product }: { product?: Product }) {
@@ -107,7 +108,7 @@ export function ProductForm({ product }: { product?: Product }) {
 
   return (
     <form onSubmit={handleSubmit} className="max-w-3xl space-y-8">
-      {error ? <p className="border border-red-700 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p> : null}
+      {error ? <p className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p> : null}
 
       <section className="grid grid-cols-2 gap-4">
         {field(
@@ -209,7 +210,7 @@ export function ProductForm({ product }: { product?: Product }) {
       </section>
 
       <section>
-        <span className="block text-xs uppercase tracking-[0.08em] text-ink/50">Photos</span>
+        <span className="block text-xs font-medium uppercase tracking-wide text-slate-500">Photos</span>
         <div className="mt-2">
           <ImageManager images={form.images} onChange={(images) => set("images", images)} />
         </div>
@@ -229,27 +230,35 @@ export function ProductForm({ product }: { product?: Product }) {
         {field("Care", <textarea className={textareaClass} value={form.care} required onChange={(e) => set("care", e.target.value)} />)}
       </section>
 
-      <section className="flex flex-wrap gap-6 border-t border-ink/10 pt-6">
-        <label className="flex items-center gap-2 text-sm">
+      <section className="flex flex-wrap gap-6 border-t border-slate-200 pt-6">
+        <label className="flex items-center gap-2 text-sm text-slate-700">
           <input type="checkbox" checked={form.isPublished} onChange={(e) => set("isPublished", e.target.checked)} />
           Published (visible on the live site)
         </label>
-        <label className="flex items-center gap-2 text-sm">
+        <label className="flex items-center gap-2 text-sm text-slate-700">
           <input type="checkbox" checked={form.isFeatured} onChange={(e) => set("isFeatured", e.target.checked)} />
           Featured on homepage
         </label>
-        <label className="flex items-center gap-2 text-sm">
+        <label className="flex items-center gap-2 text-sm text-slate-700">
           <input type="checkbox" checked={form.isHero} onChange={(e) => set("isHero", e.target.checked)} />
           Homepage hero image
         </label>
       </section>
 
-      <div className="flex items-center justify-between border-t border-ink/10 pt-6">
+      <div className="flex items-center justify-between border-t border-slate-200 pt-6">
         <div className="flex gap-3">
-          <button type="submit" disabled={saving} className="bg-charcoal px-6 py-2.5 text-sm text-ivory transition hover:bg-charcoal-soft disabled:opacity-50">
+          <button
+            type="submit"
+            disabled={saving}
+            className="rounded-md bg-slate-900 px-6 py-2.5 text-sm font-medium text-white transition hover:bg-slate-800 disabled:opacity-50"
+          >
             {saving ? "Saving…" : product ? "Save changes" : "Create product"}
           </button>
-          <button type="button" onClick={() => router.push("/admin/products")} className="border border-ink/20 px-6 py-2.5 text-sm hover:border-ink">
+          <button
+            type="button"
+            onClick={() => router.push("/admin/products")}
+            className="rounded-md border border-slate-300 px-6 py-2.5 text-sm text-slate-700 hover:bg-slate-50"
+          >
             Cancel
           </button>
         </div>
@@ -258,7 +267,7 @@ export function ProductForm({ product }: { product?: Product }) {
             type="button"
             onClick={handleDelete}
             disabled={deleting}
-            className="text-sm text-red-700 underline underline-offset-2 hover:no-underline disabled:opacity-50"
+            className="text-sm text-red-600 underline underline-offset-2 hover:no-underline disabled:opacity-50"
           >
             {deleting ? "Deleting…" : "Delete product"}
           </button>

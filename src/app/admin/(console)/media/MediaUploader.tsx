@@ -25,7 +25,7 @@ export function MediaUploader() {
 
   return (
     <div>
-      <label className="inline-flex cursor-pointer items-center border border-ink/20 px-5 py-2.5 text-sm hover:border-ink">
+      <label className="inline-flex cursor-pointer items-center rounded-md bg-slate-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-slate-800">
         {uploading ? "Uploading…" : "+ Upload image"}
         <input
           type="file"
@@ -39,7 +39,7 @@ export function MediaUploader() {
           }}
         />
       </label>
-      {error ? <p className="mt-2 text-sm text-red-700">{error}</p> : null}
+      {error ? <p className="mt-2 text-sm text-red-600">{error}</p> : null}
     </div>
   );
 }

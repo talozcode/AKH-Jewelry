@@ -6,19 +6,24 @@ export default function PagesListPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-medium">Pages</h1>
-      <p className="mt-1 text-sm text-ink/60">Edit copy and images for each page. Changes go live immediately.</p>
+      <h1 className="text-2xl font-semibold text-slate-900">Pages</h1>
+      <p className="mt-1 text-sm text-slate-500">Edit copy and images for each page. Changes go live immediately.</p>
 
-      <ul className="mt-8 max-w-md divide-y divide-ink/10 border-t border-b border-ink/10">
-        {keys.map((key) => (
-          <li key={key}>
-            <Link href={`/admin/pages/${key}`} className="flex items-center justify-between py-3 text-sm hover:text-copper">
-              {PAGE_LABELS[key]}
-              <span className="text-ink/40">→</span>
-            </Link>
-          </li>
-        ))}
-      </ul>
+      <div className="mt-6 max-w-md overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
+        <ul className="divide-y divide-slate-100">
+          {keys.map((key) => (
+            <li key={key}>
+              <Link
+                href={`/admin/pages/${key}`}
+                className="flex items-center justify-between px-5 py-3 text-sm text-slate-700 hover:bg-slate-50 hover:text-slate-900"
+              >
+                {PAGE_LABELS[key]}
+                <span className="text-slate-400">→</span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </div>
     </div>
   );
 }

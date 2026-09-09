@@ -25,10 +25,10 @@ export function FaqForm({ content: initial }: { content: FaqContent }) {
       className="space-y-4"
     >
       {content.items.map((item, i) => (
-        <div key={i} className="border border-ink/15 p-4">
+        <div key={i} className="rounded-md border border-slate-200 p-4">
           <div className="flex items-center justify-between">
-            <span className="text-xs text-ink/40">Question {i + 1}</span>
-            <button type="button" onClick={() => removeItem(i)} className="text-xs text-ink/50 hover:text-red-700">
+            <span className="text-xs text-slate-400">Question {i + 1}</span>
+            <button type="button" onClick={() => removeItem(i)} className="text-xs text-slate-500 hover:text-red-600">
               Remove
             </button>
           </div>
@@ -46,7 +46,7 @@ export function FaqForm({ content: initial }: { content: FaqContent }) {
           />
         </div>
       ))}
-      <button type="button" onClick={addItem} className="border border-ink/20 px-4 py-2 text-sm hover:border-ink">
+      <button type="button" onClick={addItem} className="rounded-md border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">
         + Add question
       </button>
       <SaveBar saving={saving} saved={saved} error={error} />

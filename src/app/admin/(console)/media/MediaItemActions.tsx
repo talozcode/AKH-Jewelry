@@ -25,15 +25,15 @@ export function MediaItemActions({ id, url, filename }: { id: string; url: strin
   }
 
   return (
-    <div className="flex border-t border-ink/10 text-xs">
-      <button type="button" onClick={handleCopy} className="flex-1 py-1.5 text-ink/60 hover:text-ink">
+    <div className="flex border-t border-slate-100 text-xs">
+      <button type="button" onClick={handleCopy} className="flex-1 py-1.5 text-slate-500 hover:text-slate-900">
         {copied ? "Copied" : "Copy URL"}
       </button>
       <button
         type="button"
         onClick={handleDelete}
         disabled={pending}
-        className="flex-1 border-l border-ink/10 py-1.5 text-ink/60 hover:text-red-700 disabled:opacity-50"
+        className="flex-1 border-l border-slate-100 py-1.5 text-slate-500 hover:text-red-600 disabled:opacity-50"
       >
         {pending ? "…" : "Delete"}
       </button>
