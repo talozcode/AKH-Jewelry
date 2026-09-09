@@ -1,8 +1,10 @@
+import type { Metadata } from "next";
 import { listMediaAssets } from "@/lib/media";
 import { MediaUploader } from "./MediaUploader";
 import { MediaItemActions } from "./MediaItemActions";
 
 export const dynamic = "force-dynamic";
+export const metadata: Metadata = { title: "Media" };
 
 export default async function MediaLibraryPage() {
   const assets = await listMediaAssets();

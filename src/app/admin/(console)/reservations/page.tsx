@@ -1,7 +1,9 @@
+import type { Metadata } from "next";
 import { getReservations, type ReservationStatus } from "@/lib/db/reservations";
 import { ReservationRow } from "./ReservationRow";
 
 export const dynamic = "force-dynamic";
+export const metadata: Metadata = { title: "Reservations" };
 
 const STATUS_FILTERS: { label: string; value: ReservationStatus | undefined }[] = [
   { label: "All", value: undefined },

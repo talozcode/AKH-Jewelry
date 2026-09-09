@@ -1,7 +1,17 @@
+import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { requireAdminPage, ADMIN_COOKIE } from "@/lib/admin/auth";
 import { Sidebar } from "./Sidebar";
+
+export const metadata: Metadata = {
+  // `absolute` (not `default`) so this doesn't also get wrapped by the root
+  // layout's "%s | AKH Jewelry" template — the admin console should never
+  // show the storefront's brand suffix in its tab title.
+  title: { template: "%s · AKH Admin", absolute: "Studio Admin" },
+  description: "AKH Jewelry studio admin.",
+  robots: { index: false, follow: false },
+};
 
 async function signOut() {
   "use server";

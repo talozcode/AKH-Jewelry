@@ -1,5 +1,8 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { PAGE_LABELS, type PageKey } from "@/lib/pages";
+
+export const metadata: Metadata = { title: "Pages" };
 
 export default function PagesListPage() {
   const keys = Object.keys(PAGE_LABELS) as PageKey[];

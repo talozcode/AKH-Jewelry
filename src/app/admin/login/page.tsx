@@ -1,8 +1,17 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { ADMIN_COOKIE, tokenMatches } from "@/lib/admin/auth";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {
+  // absolute: this page sits outside the (console) group, so it only
+  // inherits the ROOT layout's "%s | AKH Jewelry" template — without
+  // `absolute` it would double up as "Sign in · AKH Admin | AKH Jewelry".
+  title: { absolute: "Sign in · AKH Admin" },
+  robots: { index: false, follow: false },
+};
 
 async function signIn(formData: FormData) {
   "use server";

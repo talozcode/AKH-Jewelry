@@ -1,8 +1,10 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { getAllProductsForAdmin } from "@/lib/products";
 import { wixImg } from "@/lib/wixImage";
 
 export const dynamic = "force-dynamic";
+export const metadata: Metadata = { title: "Products" };
 
 export default async function AdminProductsPage() {
   const products = await getAllProductsForAdmin();

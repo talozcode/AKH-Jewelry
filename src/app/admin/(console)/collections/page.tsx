@@ -1,7 +1,9 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { getAllCollectionsForAdmin } from "@/lib/collections";
 
 export const dynamic = "force-dynamic";
+export const metadata: Metadata = { title: "Collections" };
 
 export default async function AdminCollectionsPage() {
   const collections = await getAllCollectionsForAdmin();

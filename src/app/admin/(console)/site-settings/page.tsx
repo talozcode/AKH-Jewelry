@@ -1,7 +1,9 @@
+import type { Metadata } from "next";
 import { getSiteSettings } from "@/lib/site-settings";
 import { SiteSettingsForm } from "./SiteSettingsForm";
 
 export const dynamic = "force-dynamic";
+export const metadata: Metadata = { title: "Settings" };
 
 export default async function SiteSettingsPage() {
   const settings = await getSiteSettings();
