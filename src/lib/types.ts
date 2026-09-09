@@ -3,6 +3,8 @@ export type Category = "Rings" | "Necklaces" | "Bracelets";
 export type Availability = "In Stock" | "Made to Order" | "Out of Stock";
 
 export type Product = {
+  /** Supabase row id. Absent on the frozen legacy seed data (design-concepts only). */
+  id?: string;
   slug: string;
   name: string;
   category: Category;
@@ -23,4 +25,10 @@ export type Product = {
   story: string;
   craftsmanship: string;
   care: string;
+  /** Homepage "Selected pieces" grid. Owner-controlled via /admin. */
+  isFeatured?: boolean;
+  /** Homepage hero image — exactly one product should have this true. */
+  isHero?: boolean;
+  /** Unpublished products are hidden from the storefront but visible in /admin. */
+  isPublished?: boolean;
 };

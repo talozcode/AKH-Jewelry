@@ -1,22 +1,29 @@
 import Link from "next/link";
 import { ProductCard } from "@/components/ProductCard";
 import { ProductImage } from "@/components/ProductImage";
-import { products } from "@/lib/products";
+import { getFeaturedProducts, getHeroProduct, getProducts } from "@/lib/products";
 import { STOCK } from "@/lib/stockImages";
 
-const SELECTED = ["vahavta-ring", "hai-pendant", "anemone", "maslul"];
-const HERO_PRODUCT = "anemone";
+export const dynamic = "force-dynamic";
 
-export default function Home() {
-  const selected = SELECTED.map((slug) => products.find((p) => p.slug === slug)!).filter(Boolean);
-  const heroProduct = products.find((p) => p.slug === HERO_PRODUCT)!;
+export default async function Home() {
+  const [selected, heroProduct, allProducts] = await Promise.all([
+    getFeaturedProducts(4),
+    getHeroProduct(),
+    getProducts(),
+  ]);
+  // Owner-controlled via /admin (is_hero on a product); fall back to the
+  // first published product so the homepage never has an empty hero if no
+  // product is currently marked as hero.
+  const hero = heroProduct ?? allProducts[0];
+  if (!hero) return null;
 
   return (
     <>
       {/* Hero — a strong photographic moment, not a designed graphic composition */}
       <section className="relative flex min-h-[90vh] items-end overflow-hidden bg-charcoal text-ivory">
         <div className="absolute inset-0">
-          <ProductImage idExt={heroProduct.images[0]} alt={heroProduct.name} w={1800} h={2250} className="opacity-90" />
+          <ProductImage idExt={hero.images[0]} alt={hero.name} w={1800} h={2250} className="opacity-90" />
         </div>
         <div className="absolute inset-0 bg-gradient-to-t from-charcoal via-charcoal/35 to-transparent" />
         <div className="relative mx-auto w-full max-w-6xl px-6 pb-20 sm:px-8">
