@@ -3,8 +3,7 @@
 import { useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { ProductCard } from "@/components/ProductCard";
-import { products } from "@/lib/products";
-import { Category } from "@/lib/types";
+import { Category, Product } from "@/lib/types";
 
 const CATEGORIES: Category[] = ["Rings", "Necklaces", "Bracelets"];
 const MATERIALS = ["Silver", "Gold"] as const;
@@ -31,7 +30,7 @@ function toggle<T>(list: T[], value: T): T[] {
   return list.includes(value) ? list.filter((v) => v !== value) : [...list, value];
 }
 
-export function ShopClient() {
+export function ShopClient({ products }: { products: Product[] }) {
   const searchParams = useSearchParams();
   const initialCategory = searchParams.get("category") as Category | null;
 
@@ -69,7 +68,7 @@ export function ShopClient() {
       }
       return true;
     });
-  }, [categoryFilter, materialFilter, stoneFilter, availabilityFilter, collectionFilter, priceFilter]);
+  }, [products, categoryFilter, materialFilter, stoneFilter, availabilityFilter, collectionFilter, priceFilter]);
 
   const activeCount =
     categoryFilter.length + materialFilter.length + stoneFilter.length + availabilityFilter.length + collectionFilter.length + priceFilter.length;

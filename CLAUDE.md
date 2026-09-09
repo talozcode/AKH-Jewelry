@@ -107,9 +107,94 @@ LOCKED brief above is live:
 - Next.js 16 (App Router, Turbopack), TypeScript, Tailwind CSS v4
 - Fonts: Cormorant Garamond (display serif) + Inter (sans) + Caveat (logo
   script), via `next/font/google`
-- No CMS/backend yet — product data is a static array in `src/lib/products.ts`
-  (planning underway as of 2026-09-09 — see "CMS" below)
+- Supabase (Postgres + Storage) backs the CMS — see "CMS" below. Marked
+  **temporary** by the user ("temporary until I give you a new account");
+  the schema/migration story is designed so moving projects later is a
+  re-provision + data/asset copy, not a code rewrite.
 - No cart/checkout backend yet — see "What's stubbed" below
+
+## CMS (built 2026-09-09)
+
+Full admin backend at `/admin` — the site owner can edit products (with
+photo upload), see reservation requests, and view basic stats, without
+touching code. See the approved plan at
+`.claude/plans/i-am-not-sure-steady-clover.md` (or the session that built
+this) for the original design rationale; this section is the living
+reference.
+
+- **Database**: Supabase project `jsqcgpvwrhtghijsdpei` (region
+  `ap-southeast-2`/Sydney). Two tables: `products` (mirrors `Product` in
+  `src/lib/types.ts`, plus `is_featured`/`is_hero`/`is_published` for
+  owner-controlled homepage picks and draft staging) and `reservations`
+  (snapshots product name/slug/price/currency at submission time, plus a
+  nullable FK, so a reservation stays meaningful even after the product is
+  later edited or deleted). Schema lives in
+  `supabase/migrations/0001_init.sql`. Access is `@supabase/supabase-js`
+  directly (no ORM — 2 tables doesn't earn one) via
+  `src/lib/supabase/server.ts`'s `supabaseAdmin()`, which uses the
+  **secret key** (bypasses RLS) and is **server-only** — there is
+  deliberately no browser-side Supabase client or publishable-key usage
+  anywhere in this app.
+- **Env vars** (`.env.local`, gitignored — not committed):
+  `SUPABASE_URL`, `SUPABASE_SECRET_KEY`, `SUPABASE_PUBLISHABLE_KEY` (unused
+  today, kept for completeness), `ADMIN_TOKEN` (the owner's login
+  password). All four must also be set on Vercel for prod/preview
+  deployments — they are NOT set there yet as of this build.
+- **Auth**: a single shared-token cookie (`akh_admin`), matching the
+  pattern already proven in `studio-tooka` (this user's Etsy shop app) —
+  not Supabase Auth, deliberately, to avoid standing up a full auth
+  product for one owner and to keep login decoupled from the "temporary"
+  Supabase project. Enforced twice: `src/proxy.ts` (edge, Next 16's
+  renamed `middleware.ts`) and `requireAdminPage()`/`requireAdminAction()`
+  in `src/lib/admin/auth.ts` (the authoritative check — Server Actions
+  aren't covered by the proxy matcher, so every admin mutation calls
+  `requireAdminAction()` itself). Fails closed if `ADMIN_TOKEN` is unset.
+  Login at `/admin/login`; the `(console)` route group keeps that page
+  chrome-free the same way `(site)` does for the storefront.
+- **Images**: Supabase Storage public bucket `product-images`. Uploads go
+  through a Server Action (`products/actions.ts`'s
+  `uploadProductImageAction`), resized to 1800px longest edge via `sharp`
+  before storing (Wix's CDN used to do this resize for free; Storage
+  doesn't). `wixImg()` (`src/lib/wixImage.ts`) now passes through any
+  string starting with `http` unchanged, so a product's `images[]` can mix
+  legacy Wix ids (the original 15 products) and new Supabase Storage URLs
+  on the same product with no other code changes.
+- **Reservations, not orders**: no payment collection (Stripe stays
+  deferred, per the user's standing decision). "Add to Cart" on a product
+  page (`src/components/PurchaseArea.tsx`) reveals an inline form (name,
+  email, phone — all required; message optional) and submits via
+  `src/lib/actions/reservations.ts`'s public `createReservation()`. The
+  owner sees these at `/admin/reservations`, filterable by status
+  (`new → contacted → fulfilled`, plus `cancelled`), and moves them
+  through statuses inline. Confirming and taking payment still happens
+  manually, outside the site.
+- **Product data is now Supabase-backed**: `src/lib/products.ts` was
+  rewritten from a static array to async functions
+  (`getProducts()`/`getProductBySlug()`/`getRelated()`/etc.) — same import
+  path, so every caller only needed `await` added. The original 15-product
+  static array moved verbatim to `src/lib/legacy-products-seed.ts`, used
+  only by (a) `scripts/seed-products.ts` (the one-time seed, already run)
+  and (b) `design-concepts/_lib/shared-content.ts`, which deliberately
+  stays on the frozen legacy data rather than becoming async, since that
+  page is a historical record, not live.
+- **Homepage picks are now owner-controlled**: the old hardcoded
+  `SELECTED`/`HERO_PRODUCT` arrays in `page.tsx` are gone — the homepage
+  reads `is_featured`/`is_hero` from the database instead, editable per
+  product in `/admin/products`.
+- `/`, `/shop`, and `/product/[slug]` are `force-dynamic` (no static
+  generation/ISR) so a `/admin` edit shows up immediately without a
+  redeploy — acceptable at this catalog size and traffic level; revisit if
+  either grows enough that dynamic rendering becomes a real cost.
+- **Dashboard** (`/admin`, `src/lib/admin/metrics.ts`): product counts by
+  category/availability, reservation counts by status, most-reserved
+  products (grouped on the reservation snapshot, so it stays correct after
+  a product is edited/deleted), recent activity. No revenue/analytics
+  numbers are shown — there's no real payment data yet, and inventing one
+  would be a lie.
+- **Not built**: draft-product review workflow beyond the plain
+  publish/unpublish checkbox, bulk product actions, a reservations detail
+  page (inline status change on the list row covers the stated need),
+  audit log of admin edits.
 
 ## Images (important — read before touching image code)
 
@@ -168,30 +253,28 @@ LOCKED brief above is live:
   (the heart icon toggles local state only, nothing is saved), search
   (icon is present, not wired), account pages, real newsletter signup (form
   is a no-op stub in `NewsletterForm.tsx`).
-- **CMS/admin backend**: none yet — planning started 2026-09-09, see "CMS"
-  section below once it exists.
 
 ## Product data grounding
 
-`src/lib/products.ts` is a REAL catalog — 15 of the live site's products
-(pulled 2026-09-07), each with its real name, price (₪), material, stone,
-and story copy taken from its actual akhjewelry.com product page. Names are
-standardized to one system (Title Case) in place of the live site's mix of
-ALL CAPS ("SHMIRAH VOL 1") and Title Case, per the brief's naming-consistency
-requirement — this is the one deliberate change from the source data.
-Categories match the real site exactly: Rings, Necklaces, Bracelets (no
-invented "Ready to Wear" category — the live site's version of that category
-wasn't sampled). **This static array is the first thing a CMS build needs to
-replace with a real database-backed product model** — see "Next steps."
+The 15 real products pulled from akhjewelry.com (2026-09-07) — real name,
+price (₪), material, stone, and story copy from each product's actual
+page — are now seeded into Supabase (see "CMS" above) rather than living in
+a static array. Names are standardized to one system (Title Case) in place
+of the live site's mix of ALL CAPS ("SHMIRAH VOL 1") and Title Case, per the
+brief's naming-consistency requirement — this is the one deliberate change
+from the source data. Categories match the real site exactly: Rings,
+Necklaces, Bracelets (no invented "Ready to Wear" category — the live
+site's version of that category wasn't sampled). Only 15 of ~45 real
+products are in the catalog so far — add the rest through `/admin` rather
+than editing code now that the CMS exists.
 
 ## Next steps (not started)
 
-- **CMS/admin backend** for the store owner: product CRUD + images, order
-  viewing/fulfillment, basic stats. This is the current planning focus
-  (2026-09-09) — will need a real database (product data currently lives in
-  a static TypeScript file, which a non-technical owner can't edit).
-- Wire Stripe Checkout once the user confirms it's time (likely coupled to
-  the CMS/database work, since real orders need somewhere to live).
+- Set the four CMS env vars (`SUPABASE_URL`, `SUPABASE_SECRET_KEY`,
+  `SUPABASE_PUBLISHABLE_KEY`, `ADMIN_TOKEN`) on Vercel for prod/preview —
+  the CMS works locally but hasn't been deployed with real env vars yet.
+- Wire Stripe Checkout once the user confirms it's time (reservations now
+  give real orders somewhere to live; payment collection is still manual).
 - Phase 2: stronger brand story content, real testimonials/press (current
   testimonials are illustrative placeholder quotes, clearly not tied to real
   named customers or photos), full bespoke request form

@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
+import { getProducts } from "@/lib/products";
 import { ShopClient } from "./ShopClient";
 
 export const metadata: Metadata = {
@@ -7,10 +8,13 @@ export const metadata: Metadata = {
   description: "Browse AKH's full collection of sculptural rings, necklaces and bracelets, handcrafted in small batches.",
 };
 
-export default function ShopPage() {
+export const dynamic = "force-dynamic";
+
+export default async function ShopPage() {
+  const products = await getProducts();
   return (
     <Suspense fallback={null}>
-      <ShopClient />
+      <ShopClient products={products} />
     </Suspense>
   );
 }
