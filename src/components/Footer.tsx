@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { NewsletterForm } from "./NewsletterForm";
+import type { SiteSettings } from "@/lib/site-settings";
 
 const COLUMNS: { title: string; links: { href: string; label: string }[] }[] = [
   {
@@ -30,25 +31,25 @@ const COLUMNS: { title: string; links: { href: string; label: string }[] }[] = [
   },
 ];
 
-export function Footer() {
+export function Footer({ settings }: { settings: SiteSettings }) {
   return (
     <footer className="border-t border-ivory/10 bg-charcoal text-ivory">
       <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
         <div className="grid grid-cols-2 gap-10 md:grid-cols-5">
           <div className="col-span-2 md:col-span-2">
             <span className="font-script text-3xl">akh.</span>
-            <p className="mt-4 max-w-xs text-sm leading-relaxed text-ivory/60">
-              An independent jewelry studio. Sculptural pieces handcrafted in limited
-              quantities, shaped by natural materials, personal symbolism and the
-              character of each stone.
-            </p>
+            <p className="mt-4 max-w-xs text-sm leading-relaxed text-ivory/60">{settings.footerBlurb}</p>
             <div className="mt-6 flex gap-4 text-sm text-ivory/70">
-              <a href="https://www.instagram.com/akhjewelry" target="_blank" rel="noreferrer" className="hover:text-copper-soft">
-                Instagram
-              </a>
-              <a href="https://www.tiktok.com/@akh.jewelry" target="_blank" rel="noreferrer" className="hover:text-copper-soft">
-                TikTok
-              </a>
+              {settings.instagramUrl ? (
+                <a href={settings.instagramUrl} target="_blank" rel="noreferrer" className="hover:text-copper-soft">
+                  Instagram
+                </a>
+              ) : null}
+              {settings.tiktokUrl ? (
+                <a href={settings.tiktokUrl} target="_blank" rel="noreferrer" className="hover:text-copper-soft">
+                  TikTok
+                </a>
+              ) : null}
             </div>
           </div>
 
@@ -70,8 +71,8 @@ export function Footer() {
 
         <div className="mt-14 flex flex-col gap-6 border-t border-ivory/10 pt-8 sm:flex-row sm:items-center sm:justify-between">
           <NewsletterForm />
-          <a href="mailto:hello@akhjewelry.com" className="text-sm text-ivory/60 hover:text-copper-soft">
-            hello@akhjewelry.com
+          <a href={`mailto:${settings.contactEmail}`} className="text-sm text-ivory/60 hover:text-copper-soft">
+            {settings.contactEmail}
           </a>
         </div>
 

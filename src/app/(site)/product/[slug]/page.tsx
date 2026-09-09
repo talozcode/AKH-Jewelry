@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getProductBySlug, getProducts, getRelated } from "@/lib/products";
+import { getSiteSettings } from "@/lib/site-settings";
 import { formatPrice } from "@/lib/format";
 import { Gallery } from "@/components/Gallery";
 import { PurchaseArea, StickyMobileBar } from "@/components/PurchaseArea";
@@ -34,7 +35,7 @@ export default async function ProductPage(props: PageProps<"/product/[slug]">) {
   const product = await getProductBySlug(slug);
   if (!product) notFound();
 
-  const related = await getRelated(product, 4);
+  const [related, settings] = await Promise.all([getRelated(product, 4), getSiteSettings()]);
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -112,7 +113,7 @@ export default async function ProductPage(props: PageProps<"/product/[slug]">) {
           </dl>
 
           <div className="mt-8">
-            <PurchaseArea product={product} />
+            <PurchaseArea product={product} contactEmail={settings.contactEmail} />
           </div>
 
           <div className="mt-10">

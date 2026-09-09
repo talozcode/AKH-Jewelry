@@ -99,6 +99,73 @@ export type Database = {
           },
         ];
       };
+      pages: {
+        Row: {
+          key: string;
+          content: Record<string, unknown>;
+          updated_at: string;
+        };
+        Insert: {
+          key: string;
+          content?: Record<string, unknown>;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["pages"]["Row"]>;
+        Relationships: [];
+      };
+      site_settings: {
+        Row: {
+          id: number;
+          contact_email: string;
+          contact_phone: string | null;
+          whatsapp_number: string | null;
+          instagram_url: string | null;
+          tiktok_url: string | null;
+          footer_blurb: string;
+          updated_at: string;
+        };
+        Insert: Partial<Database["public"]["Tables"]["site_settings"]["Row"]> &
+          Pick<Database["public"]["Tables"]["site_settings"]["Row"], "id" | "contact_email" | "footer_blurb">;
+        Update: Partial<Database["public"]["Tables"]["site_settings"]["Row"]>;
+        Relationships: [];
+      };
+      collections: {
+        Row: {
+          id: string;
+          slug: string;
+          name: string;
+          tagline: string;
+          intro: string;
+          hero_image_url: string;
+          hero_image_alt: string;
+          story: string;
+          product_slugs: string[];
+          is_published: boolean;
+          sort_order: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Partial<Database["public"]["Tables"]["collections"]["Row"]> &
+          Pick<
+            Database["public"]["Tables"]["collections"]["Row"],
+            "slug" | "name" | "tagline" | "intro" | "hero_image_url" | "hero_image_alt" | "story"
+          >;
+        Update: Partial<Database["public"]["Tables"]["collections"]["Row"]>;
+        Relationships: [];
+      };
+      media_assets: {
+        Row: {
+          id: string;
+          url: string;
+          storage_path: string;
+          filename: string;
+          uploaded_at: string;
+        };
+        Insert: Partial<Database["public"]["Tables"]["media_assets"]["Row"]> &
+          Pick<Database["public"]["Tables"]["media_assets"]["Row"], "url" | "storage_path" | "filename">;
+        Update: Partial<Database["public"]["Tables"]["media_assets"]["Row"]>;
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;

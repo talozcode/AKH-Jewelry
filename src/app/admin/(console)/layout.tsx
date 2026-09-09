@@ -13,7 +13,11 @@ async function signOut() {
 const NAV = [
   { href: "/admin", label: "Dashboard" },
   { href: "/admin/products", label: "Products" },
+  { href: "/admin/collections", label: "Collections" },
   { href: "/admin/reservations", label: "Reservations" },
+  { href: "/admin/pages", label: "Pages" },
+  { href: "/admin/media", label: "Media" },
+  { href: "/admin/site-settings", label: "Settings" },
 ];
 
 export default async function ConsoleLayout({ children }: { children: React.ReactNode }) {

@@ -1,33 +1,45 @@
 import type { Metadata } from "next";
 import { SimplePage } from "@/components/SimplePage";
+import { getPage } from "@/lib/pages";
+import { getSiteSettings } from "@/lib/site-settings";
+
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Contact",
   description: "Get in touch with the AKH studio.",
 };
 
-export default function ContactPage() {
+export default async function ContactPage() {
+  const [content, settings] = await Promise.all([getPage("contact"), getSiteSettings()]);
+
   return (
-    <SimplePage
-      title="Get in touch"
-      intro="For orders, bespoke enquiries, press or repairs, email the studio directly — we read and reply to every message ourselves."
-    >
+    <SimplePage title={content.heading} intro={content.intro}>
       <p>
-        <a href="mailto:hello@akhjewelry.com" className="text-copper underline underline-offset-2">
-          hello@akhjewelry.com
+        <a href={`mailto:${settings.contactEmail}`} className="text-copper underline underline-offset-2">
+          {settings.contactEmail}
         </a>
       </p>
-      <p>Studio based in Israel. Bespoke consultations available by video call on request.</p>
+      <p>{content.bodyProse}</p>
       <p>
-        Follow along at{" "}
-        <a href="https://www.instagram.com/akhjewelry" target="_blank" rel="noreferrer" className="text-copper underline underline-offset-2">
-          @akhjewelry
-        </a>{" "}
-        and{" "}
-        <a href="https://www.tiktok.com/@akh.jewelry" target="_blank" rel="noreferrer" className="text-copper underline underline-offset-2">
-          @akh.jewelry
-        </a>
-        .
+        {settings.instagramUrl ? (
+          <>
+            Follow along at{" "}
+            <a href={settings.instagramUrl} target="_blank" rel="noreferrer" className="text-copper underline underline-offset-2">
+              @akhjewelry
+            </a>
+            {settings.tiktokUrl ? (
+              <>
+                {" "}
+                and{" "}
+                <a href={settings.tiktokUrl} target="_blank" rel="noreferrer" className="text-copper underline underline-offset-2">
+                  @akh.jewelry
+                </a>
+              </>
+            ) : null}
+            .
+          </>
+        ) : null}
       </p>
     </SimplePage>
   );

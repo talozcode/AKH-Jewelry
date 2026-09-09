@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "seed": "dotenv -e .env.local -- tsx scripts/seed-products.ts"
+    "seed": "dotenv -e .env.local -- tsx scripts/seed-products.ts",
+    "seed:pages": "dotenv -e .env.local -- tsx scripts/seed-pages.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.109.0",

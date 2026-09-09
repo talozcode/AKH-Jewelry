@@ -138,8 +138,11 @@ reference.
 - **Env vars** (`.env.local`, gitignored — not committed):
   `SUPABASE_URL`, `SUPABASE_SECRET_KEY`, `SUPABASE_PUBLISHABLE_KEY` (unused
   today, kept for completeness), `ADMIN_TOKEN` (the owner's login
-  password). All four must also be set on Vercel for prod/preview
-  deployments — they are NOT set there yet as of this build.
+  password — currently the placeholder `akh-studio-2026`, rotate before
+  sharing `/admin` with the shop owner). All four are also set on the
+  Vercel project (production/preview/development) via the team-scoped
+  token in this user's `reference_vercel_token` memory. The content-CMS
+  expansion below reuses these same four — no new env vars were added.
 - **Auth**: a single shared-token cookie (`akh_admin`), matching the
   pattern already proven in `studio-tooka` (this user's Etsy shop app) —
   not Supabase Auth, deliberately, to avoid standing up a full auth
@@ -196,6 +199,64 @@ reference.
   page (inline status change on the list row covers the stated need),
   audit log of admin edits.
 
+### Content CMS expansion (built 2026-09-09) — pages, settings, media, collections
+
+A second phase, scoped to the "P0 Foundation" tier of a client-supplied
+CMS blueprint PDF (structured content, global settings, media, collection
+schemas — explicitly NOT the PDF's P1/P2: no journal/blog, campaigns, nav
+menu editor, real contact/bespoke form backends, roles, localization,
+search, analytics, or a draft/preview/publish workflow). See
+`.claude/plans/i-am-not-sure-steady-clover.md` for the full rationale;
+this section is the living reference. Schema in
+`supabase/migrations/0002_cms_expansion.sql`.
+
+- **`pages`** — one row per page (`home`, `story`, `bespoke`, `faq`,
+  `shipping-returns`, `care`, `size-guide`, `contact`, `terms`), a
+  `content jsonb` column typed by a hand-written discriminated union
+  (`PageContent` in `src/lib/pages.ts` — no Zod/validation library exists
+  in this codebase, same trust level as every other admin mutation).
+  `getPage(key)` shallow-merges the DB row over `DEFAULTS[key]`, so a
+  missing/partial field never crashes rendering. `DEFAULTS` is the exact
+  current hardcoded copy transcribed byte-for-byte — it's both the
+  fallback and the seed source (`scripts/seed-pages.ts`, run once via
+  `npm run seed:pages`). Edited at `/admin/pages/[key]`, one small
+  purpose-built form component per page shape (`HomeForm`, `StoryForm`,
+  `BespokeForm`, `FaqForm`, `SectionsForm`, `SimpleListForm`,
+  `SizeGuideForm`, `SimpleProseForm` in `pages/_forms/`) — deliberately
+  NOT a generic block/JSON editor, per the "structured fields, not
+  blocks" scope decision. Long-form prose fields (home's story/name
+  sections, story's body, terms) are one textarea rendered as paragraphs
+  split on blank lines.
+- **`site_settings`** — a singleton row (contact email/phone/WhatsApp,
+  Instagram/TikTok URLs, footer blurb), edited at `/admin/site-settings`.
+  Read by `(site)/layout.tsx` and passed to `Footer`, and by
+  `product/[slug]/page.tsx` for `PurchaseArea`'s enquiry mailto — this
+  replaced `hello@akhjewelry.com` being hardcoded independently in 7+
+  files. **Nav menu structure stays hardcoded** (`Header.tsx`'s `NAV`,
+  `Footer.tsx`'s `COLUMNS`) — a full nav editor is out of scope this
+  phase.
+- **Media library**: new Storage bucket `site-media` (separate from
+  `product-images` — different ownership model, see the plan for why),
+  tracked in a minimal `media_assets` table (no alt/caption/tag/focal
+  point — deliberately out of scope). `/admin/media` for upload/browse/
+  delete; a shared `<MediaPicker>` (`admin/(console)/_components/`) is
+  used inside the page/collection forms wherever an image field exists —
+  a flat thumbnail grid plus a raw-URL input as an escape hatch.
+- **`collections`** — a genuinely new concept (curated named groupings
+  like "Akhet"/"Scarab", hero + intro + story + an ordered
+  `product_slugs text[]`, mirroring the `products.images[]` array
+  convention rather than a join table). **Not the same thing as** the
+  pre-existing `ShopClient.tsx` "Core Collection / One of One" filter
+  facet (derived from `product.limitedEdition`) — that stays untouched.
+  Admin CRUD at `/admin/collections` (mirrors `/admin/products`
+  exactly); public at `/collections` and `/collections/[slug]`.
+- **Still immediate-save, no draft/publish workflow** — `pages` and
+  `site_settings` go live the instant they're saved, same as products
+  always have. Only `collections` gets `is_published` (the one new
+  entity with a real not-ready-yet use case).
+- Verified zero visual regression: every migrated page's rendered HTML
+  was diffed against its original hardcoded copy before this shipped.
+
 ## Images (important — read before touching image code)
 
 - **Product photos are real**, scraped from the live akhjewelry.com product pages
@@ -241,14 +302,20 @@ reference.
 - Supporting pages: `/story`, `/bespoke`, `/faq`, `/contact`,
   `/shipping-returns`, `/care`, `/size-guide` (EU ring sizing, matching the
   real site), `/terms`, `/cart` (functional stubs, most need real Phase 2
-  content and the new button/type system hasn't been extended to them yet)
+  content and the new button/type system hasn't been extended to them yet
+  — but all their copy is now CMS-editable at `/admin/pages`, see the
+  "Content CMS expansion" section above)
+- `/collections` and `/collections/[slug]`: new curated-collection pages,
+  owner-managed at `/admin/collections`, empty until the owner creates
+  the first one
 
 ## What's stubbed / explicitly NOT built yet
 
 - **Checkout/payments**: decided with the user (2026-09-07) to use custom
-  Stripe Checkout eventually, but NOT built yet. "Add to Cart" shows a
-  request-sent state and points to `hello@akhjewelry.com`; there is no cart
-  state, no payment processing, no order backend.
+  Stripe Checkout eventually, but NOT built yet. "Add to Cart" now submits
+  a real reservation (see "CMS" above) and points to the CMS-editable
+  contact email; there is no cart state, no payment processing, no
+  automated order backend beyond the reservation record.
 - Analytics/conversion tracking, abandoned-cart email, wishlist persistence
   (the heart icon toggles local state only, nothing is saved), search
   (icon is present, not wired), account pages, real newsletter signup (form
@@ -270,17 +337,18 @@ than editing code now that the CMS exists.
 
 ## Next steps (not started)
 
-- Set the four CMS env vars (`SUPABASE_URL`, `SUPABASE_SECRET_KEY`,
-  `SUPABASE_PUBLISHABLE_KEY`, `ADMIN_TOKEN`) on Vercel for prod/preview —
-  the CMS works locally but hasn't been deployed with real env vars yet.
+- Rotate `ADMIN_TOKEN` off its placeholder value before sharing `/admin`
+  with the shop owner (locally in `.env.local` and on Vercel).
+- Create the first real collection(s) through `/admin/collections` — the
+  entity exists and is wired end-to-end but starts empty.
 - Wire Stripe Checkout once the user confirms it's time (reservations now
   give real orders somewhere to live; payment collection is still manual).
 - Phase 2: stronger brand story content, real testimonials/press (current
   testimonials are illustrative placeholder quotes, clearly not tied to real
   named customers or photos), full bespoke request form
-- Phase 3: SEO pass, analytics, wishlist/abandoned-cart wiring, editorial
-  collection pages, and pulling in the rest of the live catalog (only 15 of
-  ~45 real products are in `products.ts` so far)
+- Phase 3: SEO pass, analytics, wishlist/abandoned-cart wiring, and
+  pulling in the rest of the live catalog (only 15 of ~45 real products
+  are seeded so far — add more through `/admin/products`)
 - Replace Pexels mood photography with real AKH studio photography once shot
 - Extend the locked button/type system from the homepage to shop/product/
   policy pages (currently only the homepage and the shared `PurchaseArea`

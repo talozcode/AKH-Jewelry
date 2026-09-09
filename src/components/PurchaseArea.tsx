@@ -5,7 +5,7 @@ import { Product } from "@/lib/types";
 import { formatPrice } from "@/lib/format";
 import { createReservation } from "@/lib/actions/reservations";
 
-export function PurchaseArea({ product }: { product: Product }) {
+export function PurchaseArea({ product, contactEmail = "hello@akhjewelry.com" }: { product: Product; contactEmail?: string }) {
   const [size, setSize] = useState(product.availableSizes?.[0] ?? "");
   const [showForm, setShowForm] = useState(false);
   const [sent, setSent] = useState(false);
@@ -126,7 +126,7 @@ export function PurchaseArea({ product }: { product: Product }) {
 
       {!sent && !showForm ? (
         <a
-          href={`mailto:hello@akhjewelry.com?subject=Enquiry: ${encodeURIComponent(product.name)}`}
+          href={`mailto:${contactEmail}?subject=Enquiry: ${encodeURIComponent(product.name)}`}
           className="mt-3 block w-full border border-ink/25 py-3.5 text-center text-sm uppercase tracking-[0.14em] text-ink transition hover:border-ink"
         >
           Enquire by Email
