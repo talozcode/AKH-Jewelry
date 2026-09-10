@@ -377,25 +377,92 @@ site's version of that category wasn't sampled). Only 15 of ~45 real
 products are in the catalog so far — add the rest through `/admin` rather
 than editing code now that the CMS exists.
 
-## Next steps (not started)
+## Next steps / backlog (not started)
 
-- Rotate `ADMIN_TOKEN` off its placeholder value before sharing `/admin`
-  with the shop owner (locally in `.env.local` and on Vercel).
-- Create the first real collection(s) through `/admin/collections` — the
-  entity exists and is wired end-to-end but starts empty.
-- Register the production webhook URL in the Stripe Dashboard and set
-  the real `STRIPE_WEBHOOK_SECRET` on Vercel once deployed (see
-  "Checkout / payments" above) — orders won't record and inventory won't
-  auto-update until this is done.
-- Go live: swap the test-mode `STRIPE_SECRET_KEY` for a real one once the
-  user has confirmed end-to-end testing looks right.
-- Phase 2: stronger brand story content, real testimonials/press (current
-  testimonials are illustrative placeholder quotes, clearly not tied to real
-  named customers or photos), full bespoke request form
-- Phase 3: SEO pass, analytics, wishlist/abandoned-cart wiring, and
-  pulling in the rest of the live catalog (only 15 of ~45 real products
-  are seeded so far — add more through `/admin/products`)
-- Replace Pexels mood photography with real AKH studio photography once shot
-- Extend the locked button/type system from the homepage to shop/product/
-  policy pages (currently only the homepage and the shared `PurchaseArea`
-  component were updated to the new primary/secondary button system)
+Gap-analysis done 2026-09-10 against "a true, standalone, editable,
+strong-backend e-commerce site." Verified end-to-end via a real
+chrome-devtools purchase (Buy Now → Stripe → webhook → order →
+inventory flip, see "Checkout / payments" above) — the core loop works.
+Everything below is a real, known gap, not a hypothetical, prioritized
+by how much it matters before real customers use the site.
+
+### 🔴 Launch-blockers
+
+- [ ] **Stripe account branding** — the connected account shows
+  "Dishboard" (a different project) as the merchant name at checkout.
+  Fix by either creating a dedicated Stripe account for AKH, or
+  renaming this account's public business name in Stripe Dashboard →
+  Settings → Business. Confirmed via a real screenshot of the hosted
+  checkout page — not cosmetic, every customer sees this.
+- [ ] **Go live**: swap the test-mode `STRIPE_SECRET_KEY` for a real
+  one once the branding above is fixed, and register a second,
+  live-mode webhook (the current one only covers test mode).
+- [ ] Rotate `ADMIN_TOKEN` off its placeholder value before sharing
+  `/admin` with the shop owner (locally in `.env.local` and on Vercel).
+- [ ] **Custom domain** — still on `akh-jewelry.vercel.app`, not
+  `akhjewelry.com`. Not really "standalone" on a Vercel subdomain.
+- [ ] **Terms & Privacy page is a stub** (`/admin/pages/terms`
+  literally says "This page will host AKH's full terms..."). Real
+  legal exposure to sell before this is written for real.
+- [ ] **No order confirmation/shipping emails** — Stripe's own receipt
+  is the only thing a customer gets today; nothing branded from AKH,
+  no "your order shipped" email when `/admin/orders` marks it shipped.
+- [ ] **Supabase project is explicitly temporary** ("until I give you a
+  new account," the user's own words) — the entire catalog and order
+  history lives there until it moves to a permanent project.
+
+### 🟡 Real gaps for "strong backend"
+
+- [ ] No refund/cancel flow in `/admin/orders` — refunds require going
+  into the Stripe Dashboard directly.
+- [ ] No quantity/stock counts — only In Stock / Made to Order / Out of
+  Stock. Fine for one-of-a-kind pieces, wrong for reproducible ones
+  (e.g. Veg Ring) where a second sale today wouldn't auto-block.
+- [ ] No customer accounts — guest checkout only, no order-history login.
+- [ ] No error monitoring (Sentry or similar) — a production error is
+  only ever found by a customer complaining.
+- [ ] No automated tests — every regression this session was caught by
+  manual/chrome-devtools QA, not a test suite.
+- [ ] No staging environment — every change this session went straight
+  to production.
+
+### 🟢 "Not standalone" specifically
+
+- [ ] **Legacy product photos still hotlink to Wix's CDN**
+  (`static.wixstatic.com`) for the original 15 seeded products — if the
+  old Wix site ever goes down, those images break. New admin-uploaded
+  images are already self-hosted in Supabase Storage; the originals
+  aren't. Re-upload them through `/admin/products` to fully migrate.
+- [ ] Nav menu structure is hardcoded (`Header.tsx`'s `NAV`,
+  `Footer.tsx`'s `COLUMNS`) — can't add/rename/reorder nav links from
+  `/admin` (a full nav editor was explicitly scoped out of the CMS
+  expansion — see that section above).
+- [ ] Newsletter signup is a no-op stub (`NewsletterForm.tsx`) — collects
+  nothing today.
+
+### ⚪ Longer-term / nice-to-have
+
+- [ ] Real multi-item cart (currently deliberate "Buy Now per product"
+  scope, per the user's own decision — revisit only if the shop
+  outgrows single-item checkout).
+- [ ] Discount/promo codes, abandoned-cart recovery.
+- [ ] Journal/blog, campaigns/announcement bar, roles & permissions,
+  localization, site search, analytics dashboard — all explicitly
+  scoped out of the CMS expansion's P0 (see that section above).
+- [ ] Per-page SEO fields (title/meta description are hardcoded in
+  code today, only the product page has dynamic SEO), sitemap.xml,
+  cookie-consent banner.
+- [ ] Create the first real collection(s) through `/admin/collections`
+  — the entity exists and is wired end-to-end but starts empty.
+- [ ] Replace Pexels mood photography with real AKH studio photography
+  once shot.
+- [ ] Extend the locked button/type system from the homepage to
+  shop/product/policy pages (currently only the homepage and the
+  shared `PurchaseArea` component use the new primary/secondary button
+  system).
+- [ ] Stronger brand story content, real testimonials/press (current
+  testimonials are illustrative placeholder quotes, not tied to real
+  named customers or photos), full bespoke request form.
+- [ ] Wishlist/abandoned-cart wiring, and pulling in the rest of the
+  live catalog (only 15 of ~45 real products are seeded so far — add
+  more through `/admin/products`).
