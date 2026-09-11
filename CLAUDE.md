@@ -596,6 +596,60 @@ the decided effect," not a place where this logic can drift.
   admin form's Stock quantity field and the storefront's "Last one"
   badge live in a real browser.
 
+## Tests (built 2026-09-11)
+
+`npm test` (Vitest, `vitest.config.ts`; `npm run test:watch` while
+developing). 62 tests across 10 files, all pure-function tests except
+one file of module-boundary mocks; no test touches a real Supabase or
+Stripe call.
+
+**The strategy, not just the file list**: `supabaseAdmin()` and
+`stripeClient()` are hard to mock cleanly (supabase-js's chained query
+builder especially), and the choice here was to extract the pure
+decision out of each feature and test that directly, rather than
+hand-build a fake of supabase-js's builder (untested code asserting its
+own behavior) or refactor working payment/DB code purely for
+testability. This is why several features (privacy, refunds, stock,
+checkout) each ended up with a plain exported function living next to
+their DB/action code: `mergePageContent` (`src/lib/pages.ts`),
+`safeEqual`/`tokenMatches` (`src/lib/admin/cookie.ts`,`auth.ts`),
+`safeHref` (`src/components/RichText.tsx`), `canRefund`/
+`sessionToOrderRow`/`isDuplicateSessionError` (`src/lib/db/orders.ts`),
+`buildAnonymizedOrderPatch` (`src/lib/db/privacy.ts`),
+`decideInventoryEffect`/`setProductAvailability` (`src/lib/products.ts`),
+`checkPurchasable`/`buildCheckoutParams` (`src/lib/checkoutParams.ts`,
+pulled out of `src/lib/actions/checkout.ts` specifically because a
+`"use server"` file can only export async Server Actions, so plain
+synchronous helpers can't live there even when they're exactly the
+logic worth testing).
+
+**The one exception**: `src/app/api/webhooks/stripe/route.test.ts`
+mocks `@/lib/stripe` for exactly two properties of the webhook's outer
+guard that can't be exercised as a pure function: a bad/thrown
+signature returns 400, and a missing `STRIPE_WEBHOOK_SECRET` returns
+400 without ever calling Stripe. This is the only module-boundary mock
+in the whole suite.
+
+**Explicitly not tested, and why that's a deliberate line, not a gap
+that slipped through**: modules importing `next/headers` (most Server
+Actions) don't run outside a real Next request context, so those
+wrapper functions aren't unit-testable; `requireAdminAction()`/
+`requireAdminPage()` carry no logic of their own beyond calling
+`tokenMatches()`, which is tested directly. No Playwright/E2E: the
+purchase path crosses onto `checkout.stripe.com`, whose DOM Stripe
+owns and changes without notice, making that kind of test flaky by
+construction and expensive for a solo maintainer to keep green;
+`chrome-devtools` browser QA against a real deploy (as used throughout
+this session) is the deliberate substitute.
+
+**The highest-value single test** is `buildAnonymizedOrderPatch`'s
+allowlist assertion (`src/lib/db/privacy.test.ts`): it asserts the
+exact set of columns the erasure patch touches, so adding a new
+personal-data column to `orders` later and forgetting to add it there
+fails that test by default. Every other compliance regression in this
+codebase is otherwise invisible until a real data-rights request
+surfaces it.
+
 ## What's stubbed / explicitly NOT built yet
 
 - Analytics/conversion tracking, abandoned-cart email, wishlist persistence
@@ -692,10 +746,13 @@ than deleted, so the audit trail stays intact.
   designed to get right (see below).
 - [ ] No error monitoring: decided to rely on Vercel's own logs instead
   of Sentry for now.
-- [ ] No automated tests: every regression this session was caught by
-  manual/chrome-devtools QA, not a test suite. A Vitest suite covering
-  the pure decision logic (stock, refunds, anonymization, checkout
-  guards) is Stage 6 of the launch readiness plan.
+- [x] **No automated tests** existed; every regression this session was
+  caught by manual/chrome-devtools QA. Fixed 2026-09-11 (Stage 6): a
+  Vitest suite, 62 tests across 10 files, covering every pure decision
+  extracted during Stages 0-5 plus the webhook's outer guard logic. See
+  "Tests" below. Not a claim of full coverage: UI rendering and the
+  actual Stripe/Supabase calls still aren't tested, by design (see that
+  section for why).
 - [ ] No staging environment: deliberately out of scope for now, every
   change goes straight to production.
 

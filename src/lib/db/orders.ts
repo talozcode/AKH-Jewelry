@@ -1,8 +1,11 @@
 import { supabaseAdmin } from "../supabase/server";
 import type { Database } from "../supabase/database.types";
+import type { Product } from "../types";
+import type Stripe from "stripe";
 
 export type Order = Database["public"]["Tables"]["orders"]["Row"];
 export type OrderStatus = Order["status"];
+export type NewOrderRow = Database["public"]["Tables"]["orders"]["Insert"];
 
 /**
  * The subset of statuses `updateOrderStatus` will accept. `refunded` is
@@ -110,4 +113,53 @@ export function canRefund(order: Pick<Order, "status" | "stripe_payment_intent_i
     return { ok: false, reason: "This order has no Stripe payment intent; refund it directly in the Stripe Dashboard." };
   }
   return { ok: true };
+}
+
+/**
+ * Pure mapping from a completed Checkout Session to the row the webhook
+ * inserts. Extracted specifically because every shipping/customer field
+ * here is NOT NULL on the `orders` table, so a missing value has to become
+ * `""` (or `null` where the column allows it), never `undefined` - an
+ * `undefined` value in a Supabase insert is dropped from the request body
+ * entirely rather than sent as null, which would have silently violated a
+ * NOT NULL constraint on a session missing shipping details (a live crash
+ * waiting to happen, not a hypothetical: Stripe doesn't guarantee shipping
+ * details are present on every completed session shape).
+ */
+export function sessionToOrderRow(
+  session: Pick<Stripe.Checkout.Session, "id" | "payment_intent" | "customer_details" | "collected_information" | "amount_total" | "currency">,
+  product: Pick<Product, "id" | "name" | "slug" | "price" | "currency">,
+  size: string | null
+): NewOrderRow {
+  const shipping = session.collected_information?.shipping_details;
+  return {
+    product_id: product.id,
+    product_name: product.name,
+    product_slug: product.slug,
+    product_price: product.price,
+    product_currency: product.currency,
+    size,
+    customer_name: session.customer_details?.name ?? "",
+    customer_email: session.customer_details?.email ?? "",
+    shipping_line1: shipping?.address.line1 ?? "",
+    shipping_line2: shipping?.address.line2 ?? null,
+    shipping_city: shipping?.address.city ?? "",
+    shipping_state: shipping?.address.state ?? null,
+    shipping_postal_code: shipping?.address.postal_code ?? "",
+    shipping_country: shipping?.address.country ?? "",
+    stripe_checkout_session_id: session.id,
+    stripe_payment_intent_id: typeof session.payment_intent === "string" ? session.payment_intent : null,
+    amount_total: session.amount_total ?? 0,
+    currency: (session.currency ?? product.currency).toUpperCase(),
+  };
+}
+
+/**
+ * The webhook's sole idempotency guard against Stripe retrying an event
+ * it's already processed: a unique_violation on stripe_checkout_session_id
+ * means this exact order was already inserted, so it's a no-op, not an
+ * error to surface or retry.
+ */
+export function isDuplicateSessionError(error: { code?: string } | null | undefined): boolean {
+  return error?.code === "23505";
 }

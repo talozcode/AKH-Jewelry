@@ -1,6 +1,6 @@
 import { stripeClient } from "@/lib/stripe";
 import { decideInventoryEffect, getProductById, setProductAvailability } from "@/lib/products";
-import { getOrderByPaymentIntentId, markOrderOversold, refundOrder } from "@/lib/db/orders";
+import { getOrderByPaymentIntentId, isDuplicateSessionError, markOrderOversold, refundOrder, sessionToOrderRow } from "@/lib/db/orders";
 import { supabaseAdmin } from "@/lib/supabase/server";
 import type Stripe from "stripe";
 
@@ -111,39 +111,16 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     return;
   }
 
-  const customerName = session.customer_details?.name ?? "";
-  const customerEmail = session.customer_details?.email ?? "";
-  const shipping = session.collected_information?.shipping_details;
-
   const { data: insertedOrder, error } = await supabaseAdmin()
     .from("orders")
-    .insert({
-      product_id: product.id,
-      product_name: product.name,
-      product_slug: product.slug,
-      product_price: product.price,
-      product_currency: product.currency,
-      size,
-      customer_name: customerName,
-      customer_email: customerEmail,
-      shipping_line1: shipping?.address.line1 ?? "",
-      shipping_line2: shipping?.address.line2 ?? null,
-      shipping_city: shipping?.address.city ?? "",
-      shipping_state: shipping?.address.state ?? null,
-      shipping_postal_code: shipping?.address.postal_code ?? "",
-      shipping_country: shipping?.address.country ?? "",
-      stripe_checkout_session_id: session.id,
-      stripe_payment_intent_id: typeof session.payment_intent === "string" ? session.payment_intent : null,
-      amount_total: session.amount_total ?? 0,
-      currency: (session.currency ?? product.currency).toUpperCase(),
-    })
+    .insert(sessionToOrderRow(session, product, size))
     .select("id")
     .single();
 
   if (error) {
-    if (error.code === "23505") {
-      // unique_violation on stripe_checkout_session_id - a Stripe retry of
-      // an event already processed. Not an error, just a no-op.
+    if (isDuplicateSessionError(error)) {
+      // A Stripe retry of an event already processed. Not an error, just a
+      // no-op.
       return;
     }
     throw new Error(`orders insert failed: ${error.message}`);
