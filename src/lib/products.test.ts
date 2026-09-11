@@ -26,4 +26,23 @@ describe("decideInventoryEffect", () => {
   it("does nothing for a product already Out of Stock", () => {
     expect(decideInventoryEffect({ availability: "Out of Stock", stockQuantity: null })).toBe("none");
   });
+
+  it("still calls for a decrement at stockQuantity 0 (a data-inconsistency case: In Stock but already at 0)", () => {
+    // This function only decides WHETHER to call the decrement RPC, not
+    // whether it will succeed - the atomic decrement_product_stock() SQL
+    // function's own `WHERE stock_quantity > 0` guard is what actually
+    // stops a negative count, and it correctly returns null here (treated
+    // as an oversell), never mutating the row. See
+    // supabase/migrations/0008_product_stock.sql. This case shouldn't
+    // arise in practice (a product should flip to "Out of Stock"
+    // availability the moment its tracked count hits 0), but if it ever
+    // does via a manual DB edit, the system fails safely rather than
+    // silently skipping the RPC call and leaving stock_quantity at 0
+    // without ever flagging the sale as oversold.
+    expect(decideInventoryEffect({ availability: "In Stock", stockQuantity: 0 })).toBe("decrement");
+  });
+
+  it("still calls for a decrement on a negative stockQuantity, a state the DB CHECK constraint should prevent from ever existing", () => {
+    expect(decideInventoryEffect({ availability: "In Stock", stockQuantity: -1 })).toBe("decrement");
+  });
 });

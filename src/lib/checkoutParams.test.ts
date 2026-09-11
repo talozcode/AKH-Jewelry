@@ -82,4 +82,18 @@ describe("buildCheckoutParams", () => {
     const params = buildCheckoutParams(baseProduct, undefined, "https://akhjewelry.com");
     expect(params.metadata!.size).toBe("");
   });
+
+  it("does not guard against a zero or negative price: passes it straight through to unit_amount", () => {
+    // Documented gap, not a claim this is correct behavior: the admin
+    // ProductForm's price input only enforces `min={0}` at the HTML level
+    // (not server-side), so a 0 or negative price could reach here. Stripe
+    // itself rejects a non-positive unit_amount at the API call, but by
+    // then it's an opaque runtime error surfaced to the customer as
+    // "Could not start checkout," not a clear admin-facing validation
+    // message at the point the bad price was actually saved.
+    expect(buildCheckoutParams({ ...baseProduct, price: 0 }, undefined, "https://akhjewelry.com").line_items![0].price_data!.unit_amount).toBe(0);
+    expect(buildCheckoutParams({ ...baseProduct, price: -50 }, undefined, "https://akhjewelry.com").line_items![0].price_data!.unit_amount).toBe(
+      -5000
+    );
+  });
 });

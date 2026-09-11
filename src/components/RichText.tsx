@@ -45,6 +45,20 @@ export function safeHref(url: string): string | null {
   }
 }
 
+/**
+ * Whether an already-validated href should open in a new tab. Deliberately
+ * NOT `href.startsWith("http")`: `safeHref` accepts a URL based on
+ * `new URL(url).protocol`, which WHATWG normalizes to lowercase, but
+ * returns the ORIGINAL, un-normalized string. A `[text](HTTPS://example.com)`
+ * link is therefore accepted with its case intact, and a case-sensitive
+ * `startsWith("http")` check on that raw string misses it, silently
+ * dropping `target`/`rel` on an external link. A case-insensitive check on
+ * the scheme itself doesn't have that gap.
+ */
+export function isExternalHref(href: string): boolean {
+  return /^https?:/i.test(href);
+}
+
 export function RichText({ text }: { text: string }) {
   const nodes: React.ReactNode[] = [];
   let lastIndex = 0;
@@ -59,7 +73,7 @@ export function RichText({ text }: { text: string }) {
     const href = safeHref(url);
     if (href) {
       nodes.push(
-        <a key={key++} href={href} className="text-copper underline underline-offset-2" target={href.startsWith("http") ? "_blank" : undefined} rel={href.startsWith("http") ? "noreferrer" : undefined}>
+        <a key={key++} href={href} className="text-copper underline underline-offset-2" target={isExternalHref(href) ? "_blank" : undefined} rel={isExternalHref(href) ? "noreferrer" : undefined}>
           {label}
         </a>
       );

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { safeHref } from "./RichText";
+import { isExternalHref, safeHref } from "./RichText";
 
 describe("safeHref", () => {
   it("allows https, http and mailto", () => {
@@ -45,5 +45,47 @@ describe("safeHref", () => {
   it("rejects unparseable strings instead of throwing", () => {
     expect(safeHref("not a url")).toBeNull();
     expect(safeHref("")).toBeNull();
+  });
+
+  it("accepts an uppercase-protocol URL, since new URL() normalizes the scheme before checking it", () => {
+    expect(safeHref("HTTPS://EXAMPLE.COM")).toBe("HTTPS://EXAMPLE.COM");
+  });
+
+  it("accepts a mailto: link with a query string (subject/body params)", () => {
+    expect(safeHref("mailto:hello@akhjewelry.com?subject=Order%20question")).toBe(
+      "mailto:hello@akhjewelry.com?subject=Order%20question"
+    );
+  });
+
+  it("accepts an https: URL carrying userinfo, since the protocol is still https:", () => {
+    // Not a vector this component defends against: safeHref's whole job is
+    // blocking code-executing schemes, not policing what a legitimate
+    // https:/http:/mailto: URL is allowed to contain.
+    expect(safeHref("https://user:pass@example.com")).toBe("https://user:pass@example.com");
+  });
+});
+
+describe("isExternalHref", () => {
+  it("treats plain https/http as external", () => {
+    expect(isExternalHref("https://stripe.com")).toBe(true);
+    expect(isExternalHref("http://example.com")).toBe(true);
+  });
+
+  it("treats an uppercase or mixed-case protocol as external too", () => {
+    // Regression test: safeHref accepts "HTTPS://EXAMPLE.COM" verbatim
+    // (case preserved), so the external-link check has to be
+    // case-insensitive on the scheme too, or such a link would silently
+    // lose target="_blank"/rel="noreferrer" despite pointing off-site.
+    expect(isExternalHref("HTTPS://EXAMPLE.COM")).toBe(true);
+    expect(isExternalHref("HtTpS://example.com")).toBe(true);
+  });
+
+  it("does not treat a root-relative internal link as external", () => {
+    expect(isExternalHref("/privacy")).toBe(false);
+    expect(isExternalHref("/shipping-returns")).toBe(false);
+  });
+
+  it("does not treat mailto: as external", () => {
+    expect(isExternalHref("mailto:hello@akhjewelry.com")).toBe(false);
   });
 });
