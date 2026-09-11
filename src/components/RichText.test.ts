@@ -8,6 +8,22 @@ describe("safeHref", () => {
     expect(safeHref("mailto:hello@akhjewelry.com")).toBe("mailto:hello@akhjewelry.com");
   });
 
+  it("allows a root-relative internal link and returns it unchanged, not resolved to an absolute URL", () => {
+    // Regression test: new URL("/privacy") with no base throws, which used
+    // to make every internal [text](/path) link in the Terms/Privacy pages
+    // silently fall back to unlinked literal text. Verified live in prod
+    // before this fix landed.
+    expect(safeHref("/privacy")).toBe("/privacy");
+    expect(safeHref("/shipping-returns")).toBe("/shipping-returns");
+  });
+
+  it("rejects a protocol-relative URL, which is not the same shape as an internal link", () => {
+    // "//evil.com" starts with "/" but is a scheme-relative absolute URL,
+    // not a same-site path; only exactly one leading "/" is treated as
+    // internal.
+    expect(safeHref("//evil.com/phish")).toBeNull();
+  });
+
   it("rejects javascript: URLs", () => {
     expect(safeHref("javascript:alert(1)")).toBeNull();
   });
