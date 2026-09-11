@@ -25,7 +25,8 @@ const COLUMNS: { title: string; links: { href: string; label: string }[] }[] = [
       { href: "/shipping-returns", label: "Shipping & Returns" },
       { href: "/care", label: "Jewelry Care" },
       { href: "/size-guide", label: "Size Guide" },
-      { href: "/terms", label: "Terms & Privacy" },
+      { href: "/terms", label: "Terms of Sale" },
+      { href: "/privacy", label: "Privacy Policy" },
     ],
   },
 ];

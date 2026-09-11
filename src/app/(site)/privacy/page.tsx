@@ -6,12 +6,12 @@ import { getPage } from "@/lib/pages";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Terms of Sale",
-  description: "AKH Jewelry's terms of sale: orders, made-to-order and bespoke pieces, shipping, returns and warranty.",
+  title: "Privacy Policy",
+  description: "How AKH Jewelry collects, uses and protects your personal data, including your GDPR, CCPA and Israeli privacy rights.",
 };
 
-export default async function TermsPage() {
-  const content = await getPage("terms");
+export default async function PrivacyPage() {
+  const content = await getPage("privacy");
 
   return (
     <SimplePage title={content.heading} intro={content.intro}>

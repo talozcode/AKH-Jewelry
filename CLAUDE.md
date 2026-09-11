@@ -357,6 +357,56 @@ back. One product (+ selected size) per checkout: **no multi-item cart**
   owner mark shipped. The dashboard shows real revenue (grouped by
   currency, never summed across ILS/USD) and unfulfilled-order counts.
 
+## Legal pages: Terms of Sale and Privacy Policy (built 2026-09-11)
+
+`/terms` and `/privacy` are separate pages, each real drafted content
+(not boilerplate), grounded in a live audit of what this app actually
+does (see the approved plan at
+`.claude/plans/i-am-not-sure-steady-clover.md` for the full research
+behind each claim). **This is drafted copy, not legal advice, and needs
+a lawyer's review in the operating jurisdiction before launch.**
+
+- Both reuse `SectionsContent` (`src/lib/pages.ts`), the same type
+  `shipping-returns` already used, now with two added optional fields:
+  `intro` and `lastUpdated`. `SectionsForm.tsx` (`pages/_forms/`) takes
+  a `pageKey` prop so one form component now serves all three pages.
+  Edited at `/admin/pages/terms` and `/admin/pages/privacy`.
+- **`src/components/RichText.tsx`**: a server component that renders
+  `[link text](url)` inline links within otherwise-plain body text,
+  used because a legal document needs to link Stripe's/Supabase's
+  policies and a `mailto:`, but the admin has no 2FA/rate-limiting, so
+  storing raw HTML (`dangerouslySetInnerHTML`) would turn an admin
+  credential leak into stored XSS on a page every storefront page links
+  to. Everything that isn't a matched link renders as plain React text
+  (React escapes it, so it can't emit a tag); a href is only accepted if
+  `new URL()` parses it AND its protocol is `https:`/`http:`/`mailto:`
+  (this, not string-prefix matching, is what actually closes
+  `javascript:` URLs, including case/tab/percent-encoding variants; see
+  `RichText.test.ts`'s `safeHref` tests). A rejected href renders as the
+  literal `[text](url)` text instead of a link.
+- **Placeholders**: `[[LEGAL ENTITY NAME]]`, `[[REGISTERED ADDRESS]]`,
+  `[[COMPANY / VAT NUMBER]]`, `[[EU REPRESENTATIVE NAME AND CONTACT
+  DETAILS]]`, `[[GOVERNING LAW JURISDICTION]]`, `[[PRIVACY CONTACT
+  EMAIL]]`. Double brackets never collide with `RichText`'s link syntax
+  (that needs an immediate following `(`). `/admin/pages` shows a red
+  "Unfilled placeholder" pill next to any page whose content still
+  contains `[[`, so the owner finds these before a customer does.
+- **One item inside the Terms itself is marked `[[LEGAL REVIEW: ...]]`**,
+  not a blank placeholder: whether a standard-size Made to Order catalog
+  piece qualifies for the same final-sale treatment as a true bespoke
+  commission under the EU Consumer Rights Directive's "made to the
+  consumer's specifications" exemption. The current live behavior (both
+  treated as final sale) is unchanged pending that review; see the plan
+  for the reasoning.
+- Migration `0005_legal_pages.sql` widened the `pages.key` CHECK
+  constraint to add `'privacy'`. The new `terms`/`privacy` content was
+  pushed live via a direct `upsert` for just those two keys, not
+  `npm run seed:pages` (that upserts every key and would have
+  overwritten the owner's edits to unrelated pages, e.g. home/story).
+- Deliberately NOT covered this stage: the data-rights mechanisms the
+  Privacy Policy promises (access/export/erase by email) don't exist
+  yet; that's Stage 3 of the plan, tracked below.
+
 ## What's stubbed / explicitly NOT built yet
 
 - Analytics/conversion tracking, abandoned-cart email, wishlist persistence
@@ -409,10 +459,17 @@ than deleted, so the audit trail stays intact.
   lifetime from 30 days to 7).
 - [ ] **Custom domain**: still on `akh-jewelry.vercel.app`, not
   `akhjewelry.com`. Not really "standalone" on a Vercel subdomain.
-- [ ] **Terms & Privacy page is a stub** (`/admin/pages/terms`
-  literally says "This page will host AKH's full terms..."). Real
-  legal exposure to sell before this is written for real. In progress
-  as Stage 2 of the launch readiness plan.
+- [x] **Terms & Privacy page was a stub** (`/admin/pages/terms`
+  literally said "This page will host AKH's full terms..."). Fixed
+  2026-09-11 (Stage 2 of the launch readiness plan): split into
+  `/terms` (Terms of Sale) and `/privacy` (Privacy Policy), each real
+  drafted content covering GDPR/CCPA/Israeli PPL, editable at
+  `/admin/pages/terms` and `/admin/pages/privacy`. See "Legal pages"
+  below. **Still blocking real launch**: every `[[PLACEHOLDER]]` in
+  both pages needs filling before going live (a red "Unfilled
+  placeholder" pill on `/admin/pages` flags which ones remain), and the
+  made-to-order return/withdrawal question flagged inside the Terms
+  content itself needs actual legal review, not just drafted language.
 - [ ] **No order confirmation/shipping emails**: Stripe's own receipt
   is the only thing a customer gets today; nothing branded from AKH,
   no "your order shipped" email when `/admin/orders` marks it shipped.

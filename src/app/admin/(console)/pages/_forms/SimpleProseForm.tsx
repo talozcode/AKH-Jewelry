@@ -3,7 +3,7 @@
 import type { SimpleProseContent } from "@/lib/pages";
 import { field, inputClass, textareaClass, usePageSave, SaveBar } from "./shared";
 
-export function SimpleProseForm({ pageKey, content: initial }: { pageKey: "contact" | "terms"; content: SimpleProseContent }) {
+export function SimpleProseForm({ pageKey, content: initial }: { pageKey: "contact"; content: SimpleProseContent }) {
   const { content, setContent, save, saving, error, saved } = usePageSave(pageKey, initial);
 
   return (

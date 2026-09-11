@@ -14,6 +14,7 @@ const REVALIDATE_PATHS: Record<PageKey, string[]> = {
   "size-guide": ["/size-guide"],
   contact: ["/contact"],
   terms: ["/terms"],
+  privacy: ["/privacy"],
 };
 
 export async function updatePageAction<K extends PageKey>(

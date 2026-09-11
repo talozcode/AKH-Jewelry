@@ -1,10 +1,16 @@
 "use client";
 
-import type { SectionsContent } from "@/lib/pages";
+import type { PageKey, SectionsContent } from "@/lib/pages";
 import { field, inputClass, textareaClass, usePageSave, SaveBar } from "./shared";
 
-export function SectionsForm({ content: initial }: { content: SectionsContent }) {
-  const { content, setContent, save, saving, error, saved } = usePageSave("shipping-returns", initial);
+export function SectionsForm({
+  pageKey,
+  content: initial,
+}: {
+  pageKey: Extract<PageKey, "shipping-returns" | "terms" | "privacy">;
+  content: SectionsContent;
+}) {
+  const { content, setContent, save, saving, error, saved } = usePageSave(pageKey, initial);
 
   function updateSection(i: number, patch: Partial<SectionsContent["sections"][number]>) {
     setContent((c) => ({ ...c, sections: c.sections.map((s, idx) => (idx === i ? { ...s, ...patch } : s)) }));
@@ -25,6 +31,20 @@ export function SectionsForm({ content: initial }: { content: SectionsContent })
       className="space-y-6"
     >
       {field("Page heading", <input className={inputClass} value={content.heading} onChange={(e) => setContent((c) => ({ ...c, heading: e.target.value }))} />)}
+      {field(
+        "Intro (optional)",
+        <textarea className={textareaClass} value={content.intro ?? ""} onChange={(e) => setContent((c) => ({ ...c, intro: e.target.value }))} />
+      )}
+      {field(
+        "Last updated (optional)",
+        <input
+          className={inputClass}
+          placeholder="2026-09-11"
+          value={content.lastUpdated ?? ""}
+          onChange={(e) => setContent((c) => ({ ...c, lastUpdated: e.target.value }))}
+        />,
+        "Shown at the top of the page. Update this when the content changes."
+      )}
       <div className="space-y-4">
         {content.sections.map((section, i) => (
           <div key={i} className="rounded-md border border-slate-200 p-4">
@@ -41,11 +61,14 @@ export function SectionsForm({ content: initial }: { content: SectionsContent })
               onChange={(e) => updateSection(i, { heading: e.target.value })}
             />
             <textarea
-              className={textareaClass}
+              className={textareaClass + " min-h-32"}
               placeholder="Body"
               value={section.body}
               onChange={(e) => updateSection(i, { body: e.target.value })}
             />
+            <span className="mt-1 block text-xs text-slate-400">
+              Separate paragraphs with a blank line. Add a link with [link text](https://example.com).
+            </span>
           </div>
         ))}
       </div>
