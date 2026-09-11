@@ -35,13 +35,13 @@ export function BespokeForm({ content: initial, assets }: { content: BespokeCont
       {field("Hero photo alt text", <input className={inputClass} value={content.heroImageAlt} onChange={(e) => set("heroImageAlt", e.target.value)} />)}
 
       <div>
-        <span className="block text-xs font-medium uppercase tracking-wide text-slate-500">Steps</span>
+        <span className="block text-xs font-medium uppercase tracking-wide text-[var(--admin-text-muted)]">Steps</span>
         <div className="mt-2 space-y-4">
           {content.steps.map((step, i) => (
-            <div key={i} className="rounded-md border border-slate-200 p-4">
+            <div key={i} className="rounded-md border border-[var(--admin-border)] p-4">
               <div className="flex items-center justify-between">
-                <span className="text-xs text-slate-400">Step {i + 1}</span>
-                <button type="button" onClick={() => removeStep(i)} className="text-xs text-slate-500 hover:text-red-600">
+                <span className="text-xs text-[var(--admin-text-faint)]">Step {i + 1}</span>
+                <button type="button" onClick={() => removeStep(i)} className="text-xs text-[var(--admin-text-muted)] hover:text-[var(--admin-danger)]">
                   Remove
                 </button>
               </div>
@@ -60,7 +60,7 @@ export function BespokeForm({ content: initial, assets }: { content: BespokeCont
             </div>
           ))}
         </div>
-        <button type="button" onClick={addStep} className="mt-3 rounded-md border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">
+        <button type="button" onClick={addStep} className="mt-3 rounded-md border border-[var(--admin-border-strong)] px-4 py-2 text-sm text-[var(--admin-text)] hover:bg-[var(--admin-surface-2)]">
           + Add step
         </button>
       </div>

@@ -27,18 +27,18 @@ export function SimpleListForm({ content: initial }: { content: SimpleListConten
       {field("Heading", <input className={inputClass} value={content.heading} onChange={(e) => setContent((c) => ({ ...c, heading: e.target.value }))} />)}
       {field("Intro", <textarea className={textareaClass} value={content.intro} onChange={(e) => setContent((c) => ({ ...c, intro: e.target.value }))} />)}
       <div>
-        <span className="block text-xs font-medium uppercase tracking-wide text-slate-500">Rules</span>
+        <span className="block text-xs font-medium uppercase tracking-wide text-[var(--admin-text-muted)]">Rules</span>
         <div className="mt-2 space-y-2">
           {content.rules.map((rule, i) => (
             <div key={i} className="flex gap-2">
               <input className={inputClass + " mt-0"} value={rule} onChange={(e) => updateRule(i, e.target.value)} />
-              <button type="button" onClick={() => removeRule(i)} className="px-2 text-xs text-slate-500 hover:text-red-600">
+              <button type="button" onClick={() => removeRule(i)} className="px-2 text-xs text-[var(--admin-text-muted)] hover:text-[var(--admin-danger)]">
                 Remove
               </button>
             </div>
           ))}
         </div>
-        <button type="button" onClick={addRule} className="mt-3 rounded-md border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">
+        <button type="button" onClick={addRule} className="mt-3 rounded-md border border-[var(--admin-border-strong)] px-4 py-2 text-sm text-[var(--admin-text)] hover:bg-[var(--admin-surface-2)]">
           + Add rule
         </button>
       </div>

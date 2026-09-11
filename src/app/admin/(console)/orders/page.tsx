@@ -34,8 +34,8 @@ export default async function OrdersPage({
 
   return (
     <div>
-      <h1 className="text-2xl font-semibold text-slate-900">Orders</h1>
-      <p className="mt-1 text-sm text-slate-500">Real, paid Stripe orders. Mark a piece shipped once it&apos;s dispatched.</p>
+      <h1 className="text-2xl font-semibold text-[var(--admin-text)]">Orders</h1>
+      <p className="mt-1 text-sm text-[var(--admin-text-muted)]">Real, paid Stripe orders. Mark a piece shipped once it&apos;s dispatched.</p>
 
       <div className="mt-6 flex gap-2 text-sm">
         {STATUS_FILTERS.map((f) => (
@@ -43,7 +43,7 @@ export default async function OrdersPage({
             key={f.label}
             href={f.value ? `/admin/orders?status=${f.value}` : "/admin/orders"}
             className={`rounded-md px-3 py-1.5 font-medium ${
-              validStatus === f.value ? "bg-slate-900 text-white" : "border border-slate-300 text-slate-600 hover:bg-slate-50"
+              validStatus === f.value ? "bg-[var(--admin-accent)] text-[var(--admin-accent-text)]" : "border border-[var(--admin-border-strong)] text-[var(--admin-text-muted)] hover:bg-[var(--admin-surface-2)]"
             }`}
           >
             {f.label}
@@ -51,11 +51,11 @@ export default async function OrdersPage({
         ))}
       </div>
 
-      <div className="mt-6 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
+      <div className="mt-6 overflow-hidden rounded-lg border border-[var(--admin-border)] bg-[var(--admin-surface)] shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[900px] border-collapse text-sm">
             <thead>
-              <tr className="border-b border-slate-200 bg-slate-50 text-left text-xs font-medium uppercase tracking-wide text-slate-500">
+              <tr className="border-b border-[var(--admin-border)] bg-[var(--admin-surface-2)] text-left text-xs font-medium uppercase tracking-wide text-[var(--admin-text-muted)]">
                 <th className="py-3 pl-5 pr-3">Date</th>
                 <th className="py-3 pr-3">Piece</th>
                 <th className="py-3 pr-3">Customer</th>
@@ -69,7 +69,7 @@ export default async function OrdersPage({
               ))}
             </tbody>
           </table>
-          {orders.length === 0 ? <p className="py-8 text-center text-slate-400">No orders yet.</p> : null}
+          {orders.length === 0 ? <p className="py-8 text-center text-[var(--admin-text-faint)]">No orders yet.</p> : null}
         </div>
       </div>
     </div>

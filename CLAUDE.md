@@ -761,13 +761,71 @@ small order volume):
   as a known gap since Stage 6; confirmed still true and now also
   explicitly tested in `checkoutParams.test.ts`, which asserts the
   current, unguarded behavior rather than claiming it's correct).
-- The "Unfilled placeholder" pill (`/admin/pages`) is a coarse
-  `JSON.stringify(content).includes("[[")` heuristic: it can false-
-  positive on legitimate content that happens to contain "[[", and
-  would false-negative on a placeholder written any other way. Kept as
-  a heuristic, not hardened, since over-warning is the safer failure
-  direction for a legal-compliance check and all six real placeholders
-  in `DEFAULTS` consistently use the `[[...]]` convention today.
+- The `/admin/pages` list originally flagged pages containing an
+  unfilled `[[PLACEHOLDER]]` with a red warning pill. Removed 2026-09-11
+  per explicit owner feedback ("too confusing... you can publish with
+  the placeholders, i will remove"): pages have no draft/publish
+  workflow, so having a placeholder still live is expected and fine
+  until the owner gets to it. Every row now shows a plain "Published"
+  status pill instead, matching what pages actually are.
+
+## Admin theme: light and dark, light matching the storefront exactly (built 2026-09-11)
+
+The admin console (everything under `/admin`, including the login
+page) has its own light/dark theme, independent of the storefront
+(which has no theme toggle and never will, per the locked design
+brief). Built per explicit owner feedback that the admin "just floating
+box at the moment" needed real visual design, and specifically that
+light mode should be the storefront's own palette, not a generic
+slate/white admin-dashboard look.
+
+- **Tokens**: `src/app/globals.css`, two blocks scoped under
+  `[data-admin-theme="light"]` / `[data-admin-theme="dark"]` (`--admin-bg`,
+  `--admin-surface`, `--admin-text`, `--admin-accent`, `--admin-danger`,
+  etc., plus a separate `--admin-sidebar-*` set: the sidebar keeps its
+  own dark anchor - Deep Olive in light mode, one shade darker than the
+  main surface in dark mode - rather than flattening to match the
+  content area). **Light reuses the storefront's exact hex values**
+  (Warm Bone/Deep Olive/Sage Olive/Soft Black/Aged Brass from the
+  locked palette at the top of this file); **dark is a considered,
+  hand-picked inversion**, not an auto-inverted one - Aged Brass
+  becomes the dark-mode accent color, since flat Deep Olive on a
+  near-black surface read muddy in practice.
+- Every admin component uses these tokens via Tailwind arbitrary values
+  (`bg-[var(--admin-surface)]`, etc.) rather than hardcoded `slate-*`/
+  `white` classes. Danger/success/warning/info states (red/emerald/
+  amber "sky"-ish tones) stay recognizable status colors rather than
+  being folded into the earthy palette, since scannability matters more
+  than strict on-brand purity for e.g. a refund/error state, but each
+  still has its own light/dark pair so it reads correctly in both modes.
+- **`ThemeToggle.tsx`** (in the Sidebar): persists the choice to
+  `localStorage` (`akh-admin-theme`) and applies it by setting
+  `data-admin-theme` directly on `<html>`. Deliberately built on
+  `useSyncExternalStore`, not `useState`+`useEffect`: reading a value
+  that lives outside React without that hook trips
+  `react-hooks/set-state-in-effect`, and the naive fix (a plain
+  `useState` seeded from `document.documentElement` at render time)
+  would hydration-mismatch, since the server has no `localStorage` to
+  read. `useSyncExternalStore`'s `getServerSnapshot` returns a stable
+  `"light"` for the server render, and a tiny module-level pub-sub
+  (`listeners`) is what makes the toggle button's own click notify
+  `useSyncExternalStore` to re-render - it does NOT know a value it
+  reads changed unless something calls back into it explicitly.
+- **No flash of the wrong theme**: a `next/script` with
+  `strategy="beforeInteractive"` (in `(console)/layout.tsx` and
+  `admin/login/page.tsx`, which sits outside that layout and needs its
+  own copy) reads `localStorage` and sets `data-admin-theme` on `<html>`
+  before the page becomes interactive. A plain `<script>` tag doesn't
+  work for this: React warns ("Scripts inside React components are
+  never executed when rendering on the client") the moment that tree is
+  ever reconciled on the client rather than streamed as literal HTML by
+  the browser's own parser, which `beforeInteractive` is Next's actual
+  documented mechanism for. Because this script mutates `<html>` (an
+  element the ROOT layout, shared with the storefront, renders) before
+  hydration, `suppressHydrationWarning` on that `<html>` tag
+  (`src/app/layout.tsx`) is required too - the standard, narrow escape
+  hatch for exactly this pattern (the same one `next-themes` uses),
+  not a blanket suppression.
 
 ## What's stubbed / explicitly NOT built yet
 

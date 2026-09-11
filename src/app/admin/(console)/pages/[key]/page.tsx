@@ -23,7 +23,7 @@ export default async function EditPagePage({ params }: { params: Promise<{ key: 
 
   return (
     <div>
-      <h1 className="text-2xl font-semibold text-slate-900">{PAGE_LABELS[pageKey]}</h1>
+      <h1 className="text-2xl font-semibold text-[var(--admin-text)]">{PAGE_LABELS[pageKey]}</h1>
       <div className="mt-8 max-w-2xl">
         {pageKey === "home" ? <HomeForm content={await getPage("home")} assets={assets} /> : null}
         {pageKey === "story" ? <StoryForm content={await getPage("story")} assets={assets} /> : null}

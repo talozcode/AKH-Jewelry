@@ -3,14 +3,17 @@ import { getDashboardMetrics } from "@/lib/admin/metrics";
 
 export const dynamic = "force-dynamic";
 
-function Card({ label, value, sub, accent }: { label: string; value: string | number; sub?: string; accent?: string }) {
+function Card({ label, value, sub, accent }: { label: string; value: string | number; sub?: string; accent: string }) {
   return (
-    <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
-      <div className={`h-1 ${accent ?? "bg-slate-900"}`} />
+    <div
+      className="overflow-hidden rounded-xl border border-[var(--admin-border)] bg-[var(--admin-surface)]"
+      style={{ boxShadow: "var(--admin-shadow)" }}
+    >
+      <div className="h-1" style={{ backgroundColor: accent }} />
       <div className="p-5">
-        <p className="text-xs font-medium uppercase tracking-wide text-slate-500">{label}</p>
-        <p className="mt-2 text-3xl font-semibold text-slate-900">{value}</p>
-        {sub ? <p className="mt-1 text-xs text-slate-400">{sub}</p> : null}
+        <p className="text-xs font-medium uppercase tracking-wide text-[var(--admin-text-muted)]">{label}</p>
+        <p className="mt-2 text-3xl font-semibold text-[var(--admin-text)]">{value}</p>
+        {sub ? <p className="mt-1 text-xs text-[var(--admin-text-faint)]">{sub}</p> : null}
       </div>
     </div>
   );
@@ -18,9 +21,9 @@ function Card({ label, value, sub, accent }: { label: string; value: string | nu
 
 function Panel({ title, action, children }: { title: string; action?: React.ReactNode; children: React.ReactNode }) {
   return (
-    <div className="rounded-lg border border-slate-200 bg-white shadow-sm">
-      <div className="flex items-center justify-between border-b border-slate-100 px-5 py-3">
-        <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-500">{title}</h2>
+    <div className="rounded-xl border border-[var(--admin-border)] bg-[var(--admin-surface)]" style={{ boxShadow: "var(--admin-shadow)" }}>
+      <div className="flex items-center justify-between border-b border-[var(--admin-border)] px-5 py-3">
+        <h2 className="text-xs font-semibold uppercase tracking-wide text-[var(--admin-text-muted)]">{title}</h2>
         {action}
       </div>
       <div className="p-5">{children}</div>
@@ -30,9 +33,9 @@ function Panel({ title, action, children }: { title: string; action?: React.Reac
 
 function Row({ label, value }: { label: string; value: React.ReactNode }) {
   return (
-    <li className="flex items-center justify-between border-b border-slate-100 py-2 text-sm last:border-0">
-      <span className="text-slate-700">{label}</span>
-      <span className="font-medium text-slate-900">{value}</span>
+    <li className="flex items-center justify-between border-b border-[var(--admin-border)] py-2 text-sm last:border-0">
+      <span className="text-[var(--admin-text)]/80">{label}</span>
+      <span className="font-medium text-[var(--admin-text)]">{value}</span>
     </li>
   );
 }
@@ -48,8 +51,8 @@ export default async function AdminDashboardPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-semibold text-slate-900">Dashboard</h1>
-      <p className="mt-1 text-sm text-slate-500">An overview of the shop right now.</p>
+      <h1 className="font-display text-3xl text-[var(--admin-text)]">Dashboard</h1>
+      <p className="mt-1 text-sm text-[var(--admin-text-muted)]">An overview of the shop right now.</p>
 
       <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-5">
         <Card
@@ -63,12 +66,12 @@ export default async function AdminDashboardPage() {
                   .join(", ")
               : "net of refunds, all-time"
           }
-          accent="bg-emerald-500"
+          accent="var(--admin-success)"
         />
-        <Card label="Unfulfilled orders" value={orderStatusCounts.unfulfilled} sub="need shipping" accent="bg-amber-500" />
-        <Card label="Products" value={products.total} sub={`${products.published} published, ${products.draft} draft`} accent="bg-slate-900" />
-        <Card label="Shipped orders" value={orderStatusCounts.shipped} accent="bg-sky-500" />
-        <Card label="Refunded orders" value={orderStatusCounts.refunded} accent="bg-red-500" />
+        <Card label="Unfulfilled orders" value={orderStatusCounts.unfulfilled} sub="need shipping" accent="var(--admin-warning)" />
+        <Card label="Products" value={products.total} sub={`${products.published} published, ${products.draft} draft`} accent="var(--admin-brass)" />
+        <Card label="Shipped orders" value={orderStatusCounts.shipped} accent="var(--admin-accent-soft)" />
+        <Card label="Refunded orders" value={orderStatusCounts.refunded} accent="var(--admin-danger)" />
       </div>
 
       <div className="mt-8 grid gap-6 sm:grid-cols-2">
@@ -76,21 +79,23 @@ export default async function AdminDashboardPage() {
           <Panel
             title="Recent orders"
             action={
-              <Link href="/admin/orders" className="text-xs font-medium text-slate-500 hover:text-slate-900">
+              <Link href="/admin/orders" className="text-xs font-medium text-[var(--admin-text-muted)] hover:text-[var(--admin-text)]">
                 View all &rarr;
               </Link>
             }
           >
             {recentOrders.length === 0 ? (
-              <p className="text-sm text-slate-400">No orders yet.</p>
+              <p className="text-sm text-[var(--admin-text-faint)]">No orders yet.</p>
             ) : (
               <ul>
                 {recentOrders.map((o) => (
-                  <li key={o.id} className="flex items-center justify-between border-b border-slate-100 py-2 text-sm last:border-0">
-                    <span className="text-slate-700">
+                  <li key={o.id} className="flex items-center justify-between border-b border-[var(--admin-border)] py-2 text-sm last:border-0">
+                    <span className="text-[var(--admin-text)]/80">
                       {o.customer_name}, {o.product_name}
                     </span>
-                    <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">{o.status}</span>
+                    <span className="rounded-full bg-[var(--admin-surface-2)] px-2 py-0.5 text-xs font-medium text-[var(--admin-text-muted)]">
+                      {o.status}
+                    </span>
                   </li>
                 ))}
               </ul>

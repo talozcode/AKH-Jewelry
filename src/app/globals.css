@@ -81,3 +81,85 @@ body {
     animation: none;
   }
 }
+
+/* Admin console theme. Separate token set from the storefront's own
+   locked palette above (the storefront itself has no theme toggle and
+   never will per the LOCKED design brief) - but LIGHT here reuses the
+   exact same brand hex values by design, so the admin never reads as a
+   generic SaaS dashboard bolted onto the storefront. DARK is a bespoke,
+   considered inversion of the same palette (Aged Brass as the dark-mode
+   accent, since flat Deep Olive-on-near-black reads muddy), not an
+   auto-inverted one. Defaults to light on first visit; the toggle in
+   Sidebar.tsx persists the choice to localStorage and a small inline
+   script in the console layout applies it before paint to avoid a
+   flash of the wrong theme. */
+[data-admin-theme="light"] {
+  --admin-bg: #f3efe7; /* Warm Bone */
+  --admin-surface: #fffdfa;
+  --admin-surface-2: #ece5d6; /* Stone-tinted, one step down from bg */
+  --admin-border: #d8d0c3; /* Stone */
+  --admin-border-strong: #c2b6a1;
+  --admin-text: #20211d; /* Soft Black */
+  --admin-text-muted: #6b6a5c;
+  --admin-text-faint: #94907c;
+  --admin-accent: #34392c; /* Deep Olive */
+  --admin-accent-hover: #454b39;
+  --admin-accent-text: #f3efe7;
+  --admin-accent-soft: #747861; /* Sage Olive */
+  --admin-brass: #a68c59;
+  --admin-danger: #a3382c;
+  --admin-danger-bg: #f7e6e2;
+  --admin-danger-border: #e0b8ac;
+  --admin-danger-solid: #9c3a2c;
+  --admin-danger-solid-hover: #832f23;
+  --admin-success: #3f6b45;
+  --admin-success-bg: #e3ead9;
+  --admin-warning: #93691f;
+  --admin-warning-bg: #f2e5c4;
+  --admin-shadow: 0 1px 2px rgba(32, 33, 29, 0.06), 0 1px 3px rgba(32, 33, 29, 0.04);
+  /* Sidebar keeps its own dark anchor in light mode (Deep Olive, the
+     storefront's own primary-button color) rather than flattening to the
+     same surface as the content area - a considered choice, not slate-900
+     left over from before theming existed. */
+  --admin-sidebar-bg: #34392c;
+  --admin-sidebar-text: #c7c3af;
+  --admin-sidebar-text-muted: #8f9581;
+  --admin-sidebar-active-bg: #454b39;
+  --admin-sidebar-active-text: #f3efe7;
+  --admin-sidebar-border: #454b39;
+}
+
+[data-admin-theme="dark"] {
+  --admin-bg: #1b1c16;
+  --admin-surface: #24261e;
+  --admin-surface-2: #2d2f24;
+  --admin-border: #3b3d30;
+  --admin-border-strong: #4c4e3d;
+  --admin-text: #f3efe7; /* Warm Bone */
+  --admin-text-muted: #b6b2a0;
+  --admin-text-faint: #837f6c;
+  --admin-accent: #a68c59; /* Aged Brass */
+  --admin-accent-hover: #b89c6c;
+  --admin-accent-text: #201c11;
+  --admin-accent-soft: #999174; /* Khaki */
+  --admin-brass: #a68c59;
+  --admin-danger: #e5897c;
+  --admin-danger-bg: #3a231f;
+  --admin-danger-border: #5c332b;
+  --admin-danger-solid: #b3453a;
+  --admin-danger-solid-hover: #c6584c;
+  --admin-success: #97b789;
+  --admin-success-bg: #26331f;
+  --admin-warning: #d2ac68;
+  --admin-warning-bg: #362d18;
+  --admin-shadow: 0 1px 2px rgba(0, 0, 0, 0.24), 0 1px 4px rgba(0, 0, 0, 0.2);
+  /* One step darker than the main dark surface, for the same reason the
+     light theme's sidebar is darker than ITS content area: a visible
+     anchor, not a flattened panel. */
+  --admin-sidebar-bg: #15160f;
+  --admin-sidebar-text: #a8a48f;
+  --admin-sidebar-text-muted: #736f5c;
+  --admin-sidebar-active-bg: #24261e;
+  --admin-sidebar-active-text: #f3efe7;
+  --admin-sidebar-border: #262820;
+}

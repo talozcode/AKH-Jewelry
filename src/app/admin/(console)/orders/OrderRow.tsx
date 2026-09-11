@@ -34,27 +34,27 @@ export function OrderRow({ order, productOutOfStock }: { order: Order; productOu
   }
 
   return (
-    <tr className="border-b border-slate-100 align-top last:border-0 hover:bg-slate-50/60">
-      <td className="py-3 pl-5 pr-3 text-slate-500">{new Date(order.created_at).toLocaleDateString("en-GB")}</td>
+    <tr className="border-b border-[var(--admin-border)] align-top last:border-0 hover:bg-[var(--admin-surface-2)]/60">
+      <td className="py-3 pl-5 pr-3 text-[var(--admin-text-muted)]">{new Date(order.created_at).toLocaleDateString("en-GB")}</td>
       <td className="py-3 pr-3">
-        <div className="font-medium text-slate-900">{order.product_name}</div>
-        {order.size ? <div className="text-xs text-slate-500">Size {order.size}</div> : null}
-        <div className="text-xs text-slate-500">
+        <div className="font-medium text-[var(--admin-text)]">{order.product_name}</div>
+        {order.size ? <div className="text-xs text-[var(--admin-text-muted)]">Size {order.size}</div> : null}
+        <div className="text-xs text-[var(--admin-text-muted)]">
           {order.currency === "ILS" ? "₪" : order.currency === "USD" ? "$" : order.currency + " "}
           {(order.amount_total / 100).toLocaleString()}
-          {order.amount_refunded > 0 ? <span className="text-red-600"> (refunded)</span> : null}
+          {order.amount_refunded > 0 ? <span className="text-[var(--admin-danger)]"> (refunded)</span> : null}
         </div>
         {order.oversold ? (
-          <span className="mt-1 inline-block rounded-full bg-red-100 px-2 py-0.5 text-[11px] font-medium text-red-700">
+          <span className="mt-1 inline-block rounded-full bg-[var(--admin-danger-bg)] px-2 py-0.5 text-[11px] font-medium text-[var(--admin-danger)]">
             Oversold: tracked stock hit 0 after this paid
           </span>
         ) : null}
       </td>
       <td className="py-3 pr-3">
-        <div className="text-slate-900">{order.customer_name}</div>
-        <div className="text-xs text-slate-500">{order.customer_email}</div>
+        <div className="text-[var(--admin-text)]">{order.customer_name}</div>
+        <div className="text-xs text-[var(--admin-text-muted)]">{order.customer_email}</div>
       </td>
-      <td className="py-3 pr-3 text-xs text-slate-500">
+      <td className="py-3 pr-3 text-xs text-[var(--admin-text-muted)]">
         <div>{order.shipping_line1}</div>
         {order.shipping_line2 ? <div>{order.shipping_line2}</div> : null}
         <div>
@@ -66,10 +66,10 @@ export function OrderRow({ order, productOutOfStock }: { order: Order; productOu
       <td className="py-3 pr-5">
         {order.status === "refunded" ? (
           <div>
-            <span className="inline-block rounded-full bg-red-100 px-2.5 py-1 text-xs font-medium text-red-700">Refunded</span>
-            {order.refunded_at ? <div className="mt-1 text-xs text-slate-400">{new Date(order.refunded_at).toLocaleDateString("en-GB")}</div> : null}
+            <span className="inline-block rounded-full bg-[var(--admin-danger-bg)] px-2.5 py-1 text-xs font-medium text-[var(--admin-danger)]">Refunded</span>
+            {order.refunded_at ? <div className="mt-1 text-xs text-[var(--admin-text-faint)]">{new Date(order.refunded_at).toLocaleDateString("en-GB")}</div> : null}
             {productOutOfStock ? (
-              <a href={`/admin/products/${order.product_id}`} className="mt-2 block text-xs text-copper underline underline-offset-2">
+              <a href={`/admin/products/${order.product_id}`} className="mt-2 block text-xs text-[var(--admin-accent-soft)] underline underline-offset-2">
                 This piece is marked Out of Stock. Relist it?
               </a>
             ) : null}
@@ -80,7 +80,7 @@ export function OrderRow({ order, productOutOfStock }: { order: Order; productOu
               value={order.status}
               disabled={pending}
               onChange={(e) => handleStatusChange(e.target.value as SettableOrderStatus)}
-              className="rounded-md border border-slate-300 bg-white px-2 py-1.5 text-sm outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500 disabled:opacity-50"
+              className="rounded-md border border-[var(--admin-border-strong)] bg-[var(--admin-surface)] px-2 py-1.5 text-sm outline-none focus:border-[var(--admin-accent-soft)] focus:ring-1 focus:ring-[var(--admin-accent-soft)] disabled:opacity-50"
             >
               {STATUSES.map((s) => (
                 <option key={s} value={s}>
@@ -92,11 +92,11 @@ export function OrderRow({ order, productOutOfStock }: { order: Order; productOu
               type="button"
               onClick={handleRefund}
               disabled={refunding}
-              className="block text-xs text-red-600 underline underline-offset-2 hover:text-red-700 disabled:opacity-50"
+              className="block text-xs text-[var(--admin-danger)] underline underline-offset-2 hover:opacity-75 disabled:opacity-50"
             >
               {refunding ? "Refunding…" : "Refund"}
             </button>
-            {error ? <p className="text-xs text-red-600">{error}</p> : null}
+            {error ? <p className="text-xs text-[var(--admin-danger)]">{error}</p> : null}
           </div>
         )}
       </td>

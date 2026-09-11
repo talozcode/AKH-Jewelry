@@ -10,8 +10,8 @@ export default async function SiteSettingsPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-semibold text-slate-900">Settings</h1>
-      <p className="mt-1 text-sm text-slate-500">
+      <h1 className="text-2xl font-semibold text-[var(--admin-text)]">Settings</h1>
+      <p className="mt-1 text-sm text-[var(--admin-text-muted)]">
         Contact info and social links shown in the footer and across the site. Nav menu links aren&apos;t
         editable here yet.
       </p>

@@ -44,10 +44,10 @@ export function ImageManager({
     <div>
       <div className="flex flex-wrap gap-3">
         {images.map((img, i) => (
-          <div key={img + i} className="relative w-28 rounded-md border border-slate-200 bg-slate-50 p-1">
+          <div key={img + i} className="relative w-28 rounded-md border border-[var(--admin-border)] bg-[var(--admin-surface-2)] p-1">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={wixImg(img, 300, 375)} alt="" className="h-32 w-full rounded object-cover" />
-            <div className="mt-1 flex items-center justify-between text-xs text-slate-500">
+            <div className="mt-1 flex items-center justify-between text-xs text-[var(--admin-text-muted)]">
               <button type="button" onClick={() => move(i, -1)} disabled={i === 0} className="disabled:opacity-30">
                 ←
               </button>
@@ -59,13 +59,13 @@ export function ImageManager({
             <button
               type="button"
               onClick={() => remove(i)}
-              className="mt-1 w-full rounded-md border border-slate-200 py-0.5 text-xs text-slate-500 hover:border-red-300 hover:text-red-600"
+              className="mt-1 w-full rounded-md border border-[var(--admin-border)] py-0.5 text-xs text-[var(--admin-text-muted)] hover:border-[var(--admin-danger-border)] hover:text-[var(--admin-danger)]"
             >
               Remove
             </button>
           </div>
         ))}
-        <label className="flex h-32 w-28 cursor-pointer flex-col items-center justify-center rounded-md border border-dashed border-slate-300 text-center text-xs text-slate-400 hover:border-slate-400">
+        <label className="flex h-32 w-28 cursor-pointer flex-col items-center justify-center rounded-md border border-dashed border-[var(--admin-border-strong)] text-center text-xs text-[var(--admin-text-faint)] hover:border-[var(--admin-border-strong)]">
           {uploading ? "Uploading…" : "+ Add photo"}
           <input
             type="file"
@@ -80,8 +80,8 @@ export function ImageManager({
           />
         </label>
       </div>
-      {error ? <p className="mt-2 text-sm text-red-600">{error}</p> : null}
-      <p className="mt-2 text-xs text-slate-400">
+      {error ? <p className="mt-2 text-sm text-[var(--admin-danger)]">{error}</p> : null}
+      <p className="mt-2 text-xs text-[var(--admin-text-faint)]">
         First photo is the primary image shown on the shop grid and homepage. Photos are resized to
         1800px on upload.
       </p>

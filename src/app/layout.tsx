@@ -48,7 +48,20 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${cormorant.variable} ${inter.variable} ${caveat.variable}`}>
+    <html
+      lang="en"
+      className={`${cormorant.variable} ${inter.variable} ${caveat.variable}`}
+      // The admin console's no-FOUC theme script ((console)/layout.tsx and
+      // admin/login/page.tsx) sets data-admin-theme on this element
+      // directly, before React hydrates, specifically so the correct
+      // theme is visible on first paint. React otherwise flags that as a
+      // hydration mismatch since it's an attribute on an element React
+      // itself renders; this is the standard, deliberate escape hatch for
+      // exactly that pattern (the same one next-themes uses), not a
+      // blanket suppression - it only silences attribute-level diffs on
+      // this one element, not its children or their content.
+      suppressHydrationWarning
+    >
       <body className="flex min-h-screen flex-col bg-ivory text-ink antialiased">{children}</body>
     </html>
   );

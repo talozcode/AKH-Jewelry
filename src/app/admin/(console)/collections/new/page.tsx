@@ -9,7 +9,7 @@ export default async function NewCollectionPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-semibold text-slate-900">New collection</h1>
+      <h1 className="text-2xl font-semibold text-[var(--admin-text)]">New collection</h1>
       <div className="mt-8">
         <CollectionForm allProducts={allProducts} mediaAssets={mediaAssets} />
       </div>
