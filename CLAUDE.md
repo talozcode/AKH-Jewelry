@@ -596,12 +596,11 @@ the decided effect," not a place where this logic can drift.
   admin form's Stock quantity field and the storefront's "Last one"
   badge live in a real browser.
 
-## Tests (built 2026-09-11)
+## Tests (built 2026-09-11, expanded via an adversarial edge-case pass 2026-09-11)
 
 `npm test` (Vitest, `vitest.config.ts`; `npm run test:watch` while
-developing). 62 tests across 10 files, all pure-function tests except
-one file of module-boundary mocks; no test touches a real Supabase or
-Stripe call.
+developing). 86 tests across 11 files. No test touches a real Supabase
+or Stripe call.
 
 **The strategy, not just the file list**: `supabaseAdmin()` and
 `stripeClient()` are hard to mock cleanly (supabase-js's chained query
@@ -613,7 +612,7 @@ testability. This is why several features (privacy, refunds, stock,
 checkout) each ended up with a plain exported function living next to
 their DB/action code: `mergePageContent` (`src/lib/pages.ts`),
 `safeEqual`/`tokenMatches` (`src/lib/admin/cookie.ts`,`auth.ts`),
-`safeHref` (`src/components/RichText.tsx`), `canRefund`/
+`safeHref`/`isExternalHref` (`src/components/RichText.tsx`), `canRefund`/
 `sessionToOrderRow`/`isDuplicateSessionError` (`src/lib/db/orders.ts`),
 `buildAnonymizedOrderPatch` (`src/lib/db/privacy.ts`),
 `decideInventoryEffect`/`setProductAvailability` (`src/lib/products.ts`),
@@ -623,22 +622,46 @@ pulled out of `src/lib/actions/checkout.ts` specifically because a
 synchronous helpers can't live there even when they're exactly the
 logic worth testing).
 
-**The one exception**: `src/app/api/webhooks/stripe/route.test.ts`
-mocks `@/lib/stripe` for exactly two properties of the webhook's outer
-guard that can't be exercised as a pure function: a bad/thrown
-signature returns 400, and a missing `STRIPE_WEBHOOK_SECRET` returns
-400 without ever calling Stripe. This is the only module-boundary mock
-in the whole suite.
+**`isExternalHref`** (`src/components/RichText.tsx`) decides whether a
+validated link gets `target="_blank"`/`rel="noreferrer"`. It exists as
+its own function, separate from `safeHref`, because of a real bug an
+edge-case pass found: `safeHref` accepts a URL based on
+`new URL(url).protocol`, which WHATWG normalizes to lowercase, but
+returns the href **unchanged**. A link like `[x](HTTPS://example.com)`
+was therefore accepted (correctly) but silently rendered with no
+`target`/`rel` (incorrectly), since a case-sensitive
+`href.startsWith("http")` check missed the uppercase scheme. Fixed with
+a case-insensitive `/^https?:/i` test instead, covered by
+`RichText.test.ts`'s `isExternalHref` suite.
+
+**One file exercises actual rendered output, not just pure logic**:
+`RichText.render.test.ts` calls `RichText({ text })` directly and
+inspects the returned React element tree (a plain object graph -
+`<a>...</a>` JSX is just `React.createElement`, so no DOM or jsdom is
+needed to assert on `.type`/`.props`). This is the one place UI
+rendering IS tested, covering multiple/adjacent links, a rejected
+link's exact text reconstruction, an empty label, and an unterminated
+bracket.
+
+**The one module-boundary mock in the whole suite**: `src/app/api/
+webhooks/stripe/route.test.ts` mocks `@/lib/stripe` for exactly two
+properties of the webhook's outer guard that can't be exercised as a
+pure function: a bad/thrown signature returns 400, and a missing
+`STRIPE_WEBHOOK_SECRET` returns 400 without ever calling Stripe.
 
 **Explicitly not tested, and why that's a deliberate line, not a gap
 that slipped through**: modules importing `next/headers` (most Server
 Actions) don't run outside a real Next request context, so those
 wrapper functions aren't unit-testable; `requireAdminAction()`/
 `requireAdminPage()` carry no logic of their own beyond calling
-`tokenMatches()`, which is tested directly. No Playwright/E2E: the
-purchase path crosses onto `checkout.stripe.com`, whose DOM Stripe
-owns and changes without notice, making that kind of test flaky by
-construction and expensive for a solo maintainer to keep green;
+`tokenMatches()`, which is tested directly. Client component state/
+async races (e.g. the `PrivacyLookupForm` staleness bug found and fixed
+below) aren't covered by an automated test either - no
+React Testing Library/jsdom is set up in this repo, and adding that
+dependency wasn't done reactively as part of a bug fix. No Playwright/
+E2E: the purchase path crosses onto `checkout.stripe.com`, whose DOM
+Stripe owns and changes without notice, making that kind of test flaky
+by construction and expensive for a solo maintainer to keep green;
 `chrome-devtools` browser QA against a real deploy (as used throughout
 this session) is the deliberate substitute.
 
@@ -649,6 +672,102 @@ personal-data column to `orders` later and forgetting to add it there
 fails that test by default. Every other compliance regression in this
 codebase is otherwise invisible until a real data-rights request
 surfaces it.
+
+### Edge-case audit (2026-09-11): what an adversarial pass found
+
+After the launch-readiness stages shipped, a batch of new edge-case
+tests was written by hand, then 4 parallel agents independently
+audited checkout/webhook/stock, privacy/refunds, legal-pages/RichText/
+auth, and the no-dashes script/doc accuracy, each running the full
+test suite plus adversarial code review. All 4 confirmed the suite
+passes; here's what they found and what happened to each finding.
+
+**Fixed:**
+- `isExternalHref`'s case-sensitivity bug (above).
+- **`PrivacyLookupForm.tsx`'s erase confirmation could target the wrong
+  person.** `canErase`/`handleErase` compared `confirmEmail` against the
+  live search-box `email` state, not `summary.email` (what's actually
+  displayed), and the async lookup had no staleness guard against an
+  out-of-order response. A specific sequence (retype the search box, or
+  a slower earlier lookup resolving after a faster later one) could
+  leave the erase button armed against a person other than the one
+  on-screen. Fixed: erase now always targets `summary.email`, and a
+  `lookupSeq` ref discards any lookup response that isn't the most
+  recently *started* one, regardless of network ordering. Not covered
+  by an automated test (see "Explicitly not tested" above); verify by
+  hand before relying on it under real concurrent admin usage.
+- `checkPurchasable` (`src/lib/checkoutParams.ts`) now validates `size`
+  against `product.availableSizes`. `createCheckoutSession` is a Server
+  Action, callable directly with any string regardless of what
+  `PurchaseArea.tsx`'s UI actually offers; an invalid size had no
+  financial impact (price doesn't depend on it) but would have landed
+  verbatim in the Stripe line-item description and `orders.size`.
+  Covered by new tests in `checkoutParams.test.ts`.
+- **No unique constraint on `stripe_payment_intent_id`.** One Checkout
+  Session should map to exactly one order, but nothing enforced it;
+  if two order rows ever shared a payment_intent (a data-import bug, a
+  manual SQL fix), `refundOrderAction`'s idempotency key (scoped to
+  order id, not payment_intent) would not catch a double-refund
+  against the same underlying Stripe charge from the two different
+  rows. Fixed with a partial unique index,
+  `supabase/migrations/0009_order_payment_intent_unique.sql`
+  (`where stripe_payment_intent_id is not null`, since multiple orders
+  legitimately have a null one).
+- `proxy.ts`'s login-route exemption used `pathname.startsWith("/admin/login")`;
+  tightened to an exact `===` match so a future route merely starting
+  with that string (e.g. `/admin/login-history`) can't silently inherit
+  the auth bypass. Not currently exploitable (no such route exists),
+  fixed anyway since it was a one-line change.
+- Duplicate React `key={section.heading}` in `/terms`, `/privacy` and
+  `/shipping-returns`: two sections sharing an identical heading (
+  nothing in `SectionsForm.tsx` prevents this) would produce a
+  duplicate-key console warning. Switched to the array index.
+- The no-dashes guard (see "House rule" below) was widened after the
+  audit found it only checked the two literal em/en dash codepoints,
+  missing 9 visually-identical lookalikes.
+
+**Documented, not fixed** (real gaps, but each needs more than a
+one-line change, and none has fired in this project's actual, still-
+small order volume):
+- **A product deleted between "Buy Now" and webhook delivery means the
+  paid order is never recorded at all**, not even a partial row: the
+  webhook needs the live product row to build the order snapshot
+  (`product_name`/`price`/etc.), and if `getProductById` returns
+  nothing it logs and returns before any insert. The customer has
+  already been charged. No error-monitoring/alerting exists to
+  surface this (an already-accepted gap), and no reconciliation sweep
+  exists to recover it. A real fix would mean snapshotting product
+  data into the Checkout Session's own metadata at creation time, so
+  the webhook never needs to re-fetch a possibly-deleted product.
+- **An exception thrown partway through the webhook's inventory effect
+  (the `setProductAvailability`/`decrement_product_stock` calls) isn't
+  flagged anywhere**, unlike the deliberately-tested oversell path
+  (`newQty === null`, which does set `orders.oversold`). A transient
+  Supabase error at exactly that moment would leave the order inserted
+  but the inventory effect silently un-applied.
+- **A refund webhook event arriving before its order row exists is
+  permanently dropped, not retried**: `getOrderByPaymentIntentId`
+  returning nothing is treated as "an unrelated charge," which can't be
+  distinguished from "our own checkout webhook for this payment hasn't
+  landed yet." Low probability (needs the checkout webhook to be
+  meaningfully delayed relative to a fast dashboard refund) but
+  currently unmitigated.
+- A narrow, sub-second window exists between the stock-decrement RPC
+  and the following `setProductAvailability("Out of Stock")` call
+  where a concurrent admin restock edit could be immediately
+  overwritten. Very low probability, two non-atomic statements would
+  need to become one.
+- Product price still has no server-side positivity check (documented
+  as a known gap since Stage 6; confirmed still true and now also
+  explicitly tested in `checkoutParams.test.ts`, which asserts the
+  current, unguarded behavior rather than claiming it's correct).
+- The "Unfilled placeholder" pill (`/admin/pages`) is a coarse
+  `JSON.stringify(content).includes("[[")` heuristic: it can false-
+  positive on legitimate content that happens to contain "[[", and
+  would false-negative on a placeholder written any other way. Kept as
+  a heuristic, not hardened, since over-warning is the safer failure
+  direction for a legal-compliance check and all six real placeholders
+  in `DEFAULTS` consistently use the `[[...]]` convention today.
 
 ## What's stubbed / explicitly NOT built yet
 
@@ -748,7 +867,8 @@ than deleted, so the audit trail stays intact.
   of Sentry for now.
 - [x] **No automated tests** existed; every regression this session was
   caught by manual/chrome-devtools QA. Fixed 2026-09-11 (Stage 6): a
-  Vitest suite, 62 tests across 10 files, covering every pure decision
+  Vitest suite (86 tests across 11 files as of the edge-case audit
+  below), covering every pure decision
   extracted during Stages 0-5 plus the webhook's outer guard logic. See
   "Tests" below. Not a claim of full coverage: UI rendering and the
   actual Stripe/Supabase calls still aren't tested, by design (see that
@@ -810,12 +930,20 @@ than deleted, so the audit trail stays intact.
   live catalog (only 15 of ~45 real products are seeded so far; add
   more through `/admin/products`).
 
-### House rule: no em dashes or en dashes, anywhere
+### House rule: no em dashes, en dashes, or their Unicode lookalikes, anywhere
 
 Applies to code, comments, copy, docs and commit messages, no exceptions.
 `npm run no-dashes` checks `src/`, `scripts/`, `supabase/` and this file
-and exits non-zero on any hit (see `scripts/no-dashes.sh`). Run it before
-committing; CI does not enforce this yet.
+and exits non-zero on any hit (see `scripts/no-dashes.sh`). Widened
+2026-09-11 after an adversarial audit found the original check (only
+the two literal em/en dash codepoints) trivially defeatable: it now
+also catches 9 visually-identical lookalikes (horizontal bar, minus
+sign, figure/non-breaking hyphen, fullwidth hyphen-minus, small/two-em/
+three-em dash) that an editor's autocorrect or an LLM's own output can
+introduce without anyone intending a "real" em/en dash. Ordinary ASCII
+hyphen-minus is never flagged. Run it before committing; **CI does not
+enforce this yet** - a commit with a dash or lookalike can still slip
+through today, since the only gate is remembering to run it by hand.
 
 ## Launch checklist: what only the site owner can do
 

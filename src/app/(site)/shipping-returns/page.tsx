@@ -14,8 +14,8 @@ export default async function ShippingReturnsPage() {
 
   return (
     <SimplePage title={content.heading}>
-      {content.sections.map((section) => (
-        <div key={section.heading}>
+      {content.sections.map((section, i) => (
+        <div key={i}>
           <h2 className="font-display text-lg text-ink">{section.heading}</h2>
           <p className="mt-2">{section.body}</p>
         </div>

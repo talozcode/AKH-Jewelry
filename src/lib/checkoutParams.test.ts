@@ -24,6 +24,27 @@ describe("checkPurchasable", () => {
     const result = checkPurchasable({ isPublished: true, availability: "Out of Stock" });
     expect(result.ok).toBe(false);
   });
+
+  it("allows checkout with no size for a product that has no sizes to choose from", () => {
+    expect(checkPurchasable({ isPublished: true, availability: "In Stock", availableSizes: undefined })).toEqual({ ok: true });
+  });
+
+  it("allows a size that's actually one of the product's availableSizes", () => {
+    expect(checkPurchasable({ isPublished: true, availability: "In Stock", availableSizes: ["51", "54", "56"] }, "54")).toEqual({ ok: true });
+  });
+
+  it("rejects a size that is not in the product's availableSizes", () => {
+    // createCheckoutSession is a Server Action, directly callable with any
+    // string regardless of what the UI actually offers; this closes that
+    // gap rather than just trusting the caller.
+    const result = checkPurchasable({ isPublished: true, availability: "In Stock", availableSizes: ["51", "54", "56"] }, "999");
+    expect(result.ok).toBe(false);
+  });
+
+  it("rejects any size at all for a product with no sizes defined", () => {
+    const result = checkPurchasable({ isPublished: true, availability: "In Stock", availableSizes: undefined }, "54");
+    expect(result.ok).toBe(false);
+  });
 });
 
 describe("buildCheckoutParams", () => {

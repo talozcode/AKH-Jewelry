@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import type { PersonalDataSummary } from "@/lib/db/privacy";
 import { erasePersonalDataAction, exportPersonalDataAction, lookupPersonalDataAction } from "./actions";
 
@@ -13,14 +13,21 @@ export function PrivacyLookupForm() {
   const [looking, startLookup] = useTransition();
   const [exporting, startExport] = useTransition();
   const [erasing, startErase] = useTransition();
+  // Guards against an out-of-order response: if the admin fires a second
+  // lookup (or retypes the email) before an earlier one resolves, only the
+  // most recently STARTED lookup's result is ever applied to the screen,
+  // regardless of which network response lands first.
+  const lookupSeq = useRef(0);
 
   function handleLookup(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
     setErased(null);
     setConfirmEmail("");
+    const thisLookup = ++lookupSeq.current;
     startLookup(async () => {
       const result = await lookupPersonalDataAction(email);
+      if (thisLookup !== lookupSeq.current) return; // a newer lookup has since started; discard this stale response
       if (!result.ok) {
         setError(result.error);
         setSummary(null);
@@ -49,9 +56,17 @@ export function PrivacyLookupForm() {
   }
 
   function handleErase() {
+    if (!summary) return;
     setError(null);
+    // Erase whatever email the ON-SCREEN summary is actually for, never the
+    // live search-box `email` state: the two can diverge if the admin
+    // retypes the search box after a lookup resolves (or while one is still
+    // in flight), and erasing by the search box's current value could
+    // silently target a different person than the one the confirmation UI
+    // is showing.
+    const targetEmail = summary.email;
     startErase(async () => {
-      const result = await erasePersonalDataAction(email, confirmEmail);
+      const result = await erasePersonalDataAction(targetEmail, confirmEmail);
       if (!result.ok) {
         setError(result.error);
         return;
@@ -59,13 +74,19 @@ export function PrivacyLookupForm() {
       setErased(result.erasedCount);
       setConfirmEmail("");
       // Re-look-up so the list reflects the now-anonymized rows immediately.
-      const refreshed = await lookupPersonalDataAction(email);
+      const thisLookup = ++lookupSeq.current;
+      const refreshed = await lookupPersonalDataAction(targetEmail);
+      if (thisLookup !== lookupSeq.current) return;
       if (refreshed.ok) setSummary(refreshed.summary);
     });
   }
 
   const unerased = summary?.orders.filter((o) => !o.anonymized_at) ?? [];
-  const canErase = summary !== null && unerased.length > 0 && confirmEmail.trim().toLowerCase() === email.trim().toLowerCase();
+  // Confirmation is checked against summary.email (what's actually
+  // displayed and what handleErase will actually target), not the live
+  // search-box `email` state - see handleErase's comment for why those two
+  // can diverge.
+  const canErase = summary !== null && unerased.length > 0 && confirmEmail.trim().toLowerCase() === summary.email.trim().toLowerCase();
 
   return (
     <div className="space-y-8">

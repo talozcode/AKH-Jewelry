@@ -15,7 +15,10 @@ import { ADMIN_COOKIE, safeEqual } from "@/lib/admin/cookie";
 export function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  if (pathname.startsWith("/admin/login")) return NextResponse.next();
+  // Exact match, not startsWith: only "/admin/login" itself is exempt from
+  // the auth check. A prefix match would silently exempt any future route
+  // that happens to start with the same string (e.g. "/admin/login-history").
+  if (pathname === "/admin/login") return NextResponse.next();
 
   const cookie = req.cookies.get(ADMIN_COOKIE)?.value;
   const expected = process.env.ADMIN_TOKEN;

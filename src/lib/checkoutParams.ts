@@ -12,9 +12,26 @@ import type Stripe from "stripe";
 
 export type PurchasabilityCheck = { ok: true } | { ok: false; error: string };
 
-export function checkPurchasable(product: Pick<Product, "isPublished" | "availability"> | undefined): PurchasabilityCheck {
+/**
+ * `size` is checked here, not just trusted from the caller: createCheckoutSession
+ * is a Server Action, directly callable with any string regardless of what
+ * PurchaseArea.tsx's UI actually offers (it only ever sends `undefined` or
+ * one of `product.availableSizes`). No financial impact either way (price
+ * doesn't depend on size), but an unvalidated size would land verbatim in
+ * the Stripe line-item description and the `orders.size` column, so a
+ * tampered/direct call could write arbitrary text there.
+ */
+export function checkPurchasable(
+  product: Pick<Product, "isPublished" | "availability" | "availableSizes"> | undefined,
+  size?: string
+): PurchasabilityCheck {
   if (!product || !product.isPublished) return { ok: false, error: "This piece is no longer available." };
   if (product.availability === "Out of Stock") return { ok: false, error: "This piece is out of stock." };
+  if (size !== undefined) {
+    if (!product.availableSizes || !product.availableSizes.includes(size)) {
+      return { ok: false, error: "Please select a valid size." };
+    }
+  }
   return { ok: true };
 }
 

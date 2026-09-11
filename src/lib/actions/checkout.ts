@@ -18,7 +18,7 @@ export async function createCheckoutSession(
   size?: string
 ): Promise<{ ok: true; url: string } | { ok: false; error: string }> {
   const product = await getProductById(productId);
-  const purchasable = checkPurchasable(product);
+  const purchasable = checkPurchasable(product, size);
   if (!purchasable.ok) return purchasable;
 
   const headerList = await headers();
