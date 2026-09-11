@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { NewsletterForm } from "./NewsletterForm";
 import type { SiteSettings } from "@/lib/site-settings";
 
 const COLUMNS: { title: string; links: { href: string; label: string }[] }[] = [
@@ -70,7 +69,7 @@ export function Footer({ settings }: { settings: SiteSettings }) {
         </div>
 
         <div className="mt-14 flex flex-col gap-6 border-t border-ivory/10 pt-8 sm:flex-row sm:items-center sm:justify-between">
-          <NewsletterForm />
+          <p className="text-sm text-ivory/60">Email the studio for new-piece announcements</p>
           <a href={`mailto:${settings.contactEmail}`} className="text-sm text-ivory/60 hover:text-copper-soft">
             {settings.contactEmail}
           </a>

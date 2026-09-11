@@ -4,7 +4,7 @@
  * license permits free commercial use with no attribution required. Every
  * product photo elsewhere in the app is real, pulled from akhjewelry.com.
  *
- * Swap these for real studio photography before launch — see CLAUDE.md.
+ * Swap these for real studio photography before launch - see CLAUDE.md.
  */
 function pexels(id: string, w = 1600) {
   return `https://images.pexels.com/photos/${id}/pexels-photo-${id}.jpeg?auto=compress&cs=tinysrgb&w=${w}`;

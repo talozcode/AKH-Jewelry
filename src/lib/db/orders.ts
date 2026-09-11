@@ -22,7 +22,7 @@ export async function getOrderCountsByStatus(): Promise<Record<OrderStatus, numb
 
 /**
  * Sum of amount_total (Stripe's smallest-currency-unit amounts), grouped
- * by currency — never summed across currencies, since ₪ and $ aren't the
+ * by currency - never summed across currencies, since ₪ and $ aren't the
  * same unit. Most orders are expected to be ILS; a second currency just
  * shows as its own line rather than silently distorting one total.
  */
@@ -34,7 +34,7 @@ export async function getRevenueByCurrency(): Promise<Record<string, number>> {
   return totals;
 }
 
-/** Admin only — call `requireAdminAction()` before this. */
+/** Admin only - call `requireAdminAction()` before this. */
 export async function updateOrderStatus(id: string, status: OrderStatus): Promise<void> {
   const { error } = await supabaseAdmin().from("orders").update({ status }).eq("id", id);
   if (error) throw new Error(`updateOrderStatus: ${error.message}`);

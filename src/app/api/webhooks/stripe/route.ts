@@ -4,7 +4,7 @@ import { supabaseAdmin } from "@/lib/supabase/server";
 import type Stripe from "stripe";
 
 // This repo's first API Route Handler. Runs on the default Node runtime
-// (not Edge) — Stripe's SDK needs Node's crypto for signature
+// (not Edge) - Stripe's SDK needs Node's crypto for signature
 // verification.
 
 export async function POST(req: Request) {
@@ -18,7 +18,7 @@ export async function POST(req: Request) {
     return new Response("Webhook not configured", { status: 400 });
   }
 
-  // MUST read the raw text body, never req.json() first — signature
+  // MUST read the raw text body, never req.json() first - signature
   // verification needs the exact byte string Stripe signed.
   const rawBody = await req.text();
 
@@ -36,7 +36,7 @@ export async function POST(req: Request) {
       await handleCheckoutCompleted(session);
     } catch (err) {
       // Judgment call: log and still 200 for errors a Stripe retry can't
-      // fix (deleted product, a duplicate event already recorded) — a
+      // fix (deleted product, a duplicate event already recorded) - a
       // retry would just fail the same way and eventually cause Stripe to
       // disable the endpoint. Only a genuinely transient failure should
       // bubble past this into a 500 so Stripe retries it.
@@ -55,7 +55,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     return;
   }
 
-  // Fetch the product fresh — never trust old metadata for price/name in
+  // Fetch the product fresh - never trust old metadata for price/name in
   // case it changed between checkout creation and payment confirmation.
   const product = await getProductById(productId);
   if (!product) {
@@ -92,7 +92,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
 
   if (error) {
     if (error.code === "23505") {
-      // unique_violation on stripe_checkout_session_id — a Stripe retry of
+      // unique_violation on stripe_checkout_session_id - a Stripe retry of
       // an event already processed. Not an error, just a no-op.
       return;
     }

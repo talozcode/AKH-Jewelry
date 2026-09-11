@@ -9,8 +9,8 @@ export function ConceptA() {
     <section className="scroll-mt-16 border-t-2 border-ink/10 bg-ivory">
       <ConceptLabel
         id="concept-a"
-        title="A — Earth & Hand (refined baseline)"
-        rationale="The current live direction, as-is: warm olive and brass, Fraunces headlines, a handwritten wordmark. The control — a clean reference for the other three to be measured against."
+        title="A - Earth & Hand (refined baseline)"
+        rationale="The current live direction, as-is: warm olive and brass, Fraunces headlines, a handwritten wordmark. The control - a clean reference for the other three to be measured against."
         titleStyle={{ fontFamily: "var(--font-fraunces)", fontSize: "1.5rem", color: "var(--color-ink)" }}
         mutedStyle={{ fontSize: "0.85rem", color: "var(--color-mineral)" }}
       />
@@ -24,7 +24,7 @@ export function ConceptA() {
           </h3>
           <p className="mt-4 max-w-sm text-ink/70">
             Sculptural silver and gold pieces, each shaped by material,
-            meaning and instinct — in small batches, at the studio bench.
+            meaning and instinct - in small batches, at the studio bench.
           </p>
           <a
             href="#concept-a"
@@ -55,9 +55,9 @@ export function ConceptA() {
           { name: "Ink", hex: "#29230f" },
         ]}
         specimens={[
-          { label: "Fraunces — display", style: { fontFamily: "var(--font-fraunces)", fontSize: "1.5rem" } },
-          { label: "Inter — body", style: { fontFamily: "var(--font-inter)", fontSize: "1.1rem" } },
-          { label: "Caveat — wordmark", style: { fontFamily: "var(--font-caveat)", fontSize: "1.6rem" } },
+          { label: "Fraunces - display", style: { fontFamily: "var(--font-fraunces)", fontSize: "1.5rem" } },
+          { label: "Inter - body", style: { fontFamily: "var(--font-inter)", fontSize: "1.1rem" } },
+          { label: "Caveat - wordmark", style: { fontFamily: "var(--font-caveat)", fontSize: "1.6rem" } },
         ]}
       />
     </section>

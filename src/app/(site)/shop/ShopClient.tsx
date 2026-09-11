@@ -21,8 +21,8 @@ const AVAILABILITY = ["In Stock", "Made to Order", "Out of Stock"] as const;
 const COLLECTIONS = ["Core Collection", "One of One"] as const;
 const PRICE_BANDS: { label: string; test: (p: number) => boolean }[] = [
   { label: "Under ₪800", test: (p) => p < 800 },
-  { label: "₪800 – ₪1,500", test: (p) => p >= 800 && p <= 1500 },
-  { label: "₪1,500 – ₪5,000", test: (p) => p > 1500 && p <= 5000 },
+  { label: "₪800 - ₪1,500", test: (p) => p >= 800 && p <= 1500 },
+  { label: "₪1,500 - ₪5,000", test: (p) => p > 1500 && p <= 5000 },
   { label: "Over ₪5,000", test: (p) => p > 5000 },
 ];
 

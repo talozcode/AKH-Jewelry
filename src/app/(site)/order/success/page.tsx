@@ -16,7 +16,7 @@ export default async function OrderSuccessPage({
 }) {
   const { session_id } = await searchParams;
 
-  // Read directly from Stripe, not from our own `orders` table — the
+  // Read directly from Stripe, not from our own `orders` table - the
   // webhook that writes that row is async and may not have run yet by
   // the time the browser lands here. This is independent of that timing.
   let summary: { name: string; amount: number; currency: string; email: string | null } | null = null;
@@ -41,7 +41,7 @@ export default async function OrderSuccessPage({
     <div className="mx-auto max-w-2xl px-4 py-24 text-center sm:px-6 lg:px-8">
       <h1 className="font-display text-3xl">Thank you</h1>
       <p className="mt-4 text-ink/70">
-        Your order is confirmed. A confirmation is on its way{summary?.email ? ` to ${summary.email}` : ""} — we&apos;ll
+        Your order is confirmed. A confirmation is on its way{summary?.email ? ` to ${summary.email}` : ""} - we&apos;ll
         be in touch about dispatch.
       </p>
 

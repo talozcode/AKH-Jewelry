@@ -25,8 +25,8 @@ export function ConceptC() {
     >
       <ConceptLabel
         id="concept-c"
-        title="C — Rooted (connected to the earth)"
-        rationale="Terracotta and sage, circular crops, imperfect alignment — the tactile, earth-connected reading of handmade, pulling on the studio's own craftsmanship photography."
+        title="C - Rooted (connected to the earth)"
+        rationale="Terracotta and sage, circular crops, imperfect alignment - the tactile, earth-connected reading of handmade, pulling on the studio's own craftsmanship photography."
         titleStyle={{ ...roundedFraunces, fontSize: "1.5rem", color: UMBER }}
         mutedStyle={{ fontSize: "0.9rem", color: `${UMBER}99` }}
       />
@@ -94,8 +94,8 @@ export function ConceptC() {
             { name: "Umber", hex: UMBER },
           ]}
           specimens={[
-            { label: "Fraunces (soft axis) — display", style: { ...roundedFraunces, fontSize: "1.5rem" } },
-            { label: "Karla — body", style: { fontFamily: karla.style.fontFamily, fontSize: "1.1rem" } },
+            { label: "Fraunces (soft axis) - display", style: { ...roundedFraunces, fontSize: "1.5rem" } },
+            { label: "Karla - body", style: { fontFamily: karla.style.fontFamily, fontSize: "1.1rem" } },
           ]}
         />
       </div>

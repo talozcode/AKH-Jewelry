@@ -1,6 +1,6 @@
 import type { CSSProperties } from "react";
 
-// Deliberately neutral (fixed white/ink, not styled per-concept) — this is
+// Deliberately neutral (fixed white/ink, not styled per-concept) - this is
 // a documentation panel for reviewing the raw tokens, not part of the pitch.
 export function SpecimenLegend({
   swatches,

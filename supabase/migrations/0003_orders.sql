@@ -1,5 +1,5 @@
 -- AKH Jewelry: orders (real Stripe-paid purchases). Separate from
--- reservations (contact-only, no payment) — see CLAUDE.md's Checkout
+-- reservations (contact-only, no payment) - see CLAUDE.md's Checkout
 -- section. A row only ever exists for a session that already succeeded,
 -- so `status` here is a fulfillment state, not a payment state.
 

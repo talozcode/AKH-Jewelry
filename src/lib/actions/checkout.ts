@@ -7,7 +7,7 @@ import { wixImg } from "../wixImage";
 
 // Stripe's full documented list of ISO 3166-1 alpha-2 codes accepted by
 // shipping_address_collection.allowed_countries (verified live against
-// https://docs.stripe.com/api/checkout/sessions/create — no wildcard
+// https://docs.stripe.com/api/checkout/sessions/create: no wildcard
 // exists, Stripe requires an explicit list). Effectively "ship anywhere
 // Stripe supports," matching the site's "we ship worldwide" copy.
 const ALLOWED_SHIPPING_COUNTRIES: string[] = [
@@ -29,11 +29,11 @@ const ALLOWED_SHIPPING_COUNTRIES: string[] = [
 ] as const;
 
 /**
- * Public action — called from PurchaseArea.tsx's "Buy Now" button, no
+ * Public action, called from PurchaseArea.tsx's "Buy Now" button, no
  * admin gate. Builds a hosted Stripe Checkout Session for exactly one
  * product (+ optional size) and returns its URL rather than calling
- * redirect() directly, so the caller (a client component already using
- * the createReservation-style { ok, ... } pattern) can show a real error
+ * redirect() directly, so the caller (a client component using the
+ * standard { ok, ... } action-result pattern) can show a real error
  * inline instead of forcing a hard navigation on failure.
  */
 export async function createCheckoutSession(
@@ -67,7 +67,7 @@ export async function createCheckoutSession(
               name: product.name,
               ...(size ? { description: `Size ${size}` } : {}),
               // wixImg() always returns a full public URL (either the
-              // Wix CDN or a Supabase Storage URL) — safe to hand to
+              // Wix CDN or a Supabase Storage URL): safe to hand to
               // Stripe's checkout page directly, which needs a real
               // publicly reachable image URL, not a bare id.
               ...(product.images[0] ? { images: [wixImg(product.images[0], 900, 1125)] } : {}),

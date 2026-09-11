@@ -1,7 +1,7 @@
 /**
  * One-time seed: inserts the transcribed current hardcoded copy into
  * `pages` and `site_settings`. Run once: `npm run seed:pages`
- * Safe to re-run — upserts, so it won't duplicate rows.
+ * Safe to re-run - upserts, so it won't duplicate rows.
  */
 import { DEFAULTS } from "../src/lib/pages";
 import { DEFAULT_SETTINGS } from "../src/lib/site-settings";

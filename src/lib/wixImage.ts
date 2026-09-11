@@ -6,7 +6,7 @@
  *
  * Since the CMS shipped, `images[]` on a product can also hold a full URL
  * (a Supabase Storage public URL for an owner-uploaded photo) instead of a
- * bare Wix id — those pass through unchanged, since Supabase Storage has no
+ * bare Wix id - those pass through unchanged, since Supabase Storage has no
  * equivalent on-the-fly resize service.
  */
 // All akhjewelry.com media lives under this Wix site media owner prefix.

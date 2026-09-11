@@ -6,7 +6,7 @@ import { getLegacyProductBySlug } from "@/lib/legacy-products-seed";
 // products, prices and copy across all four.
 //
 // Deliberately reads the frozen legacy seed data, not the live Supabase-backed
-// src/lib/products.ts — this page is a historical record (see CLAUDE.md) and
+// src/lib/products.ts - this page is a historical record (see CLAUDE.md) and
 // stays decoupled from live DB state on purpose.
 export const cardProducts = ["anemone", "hai-pendant", "tsil-bangle"].map(
   (slug) => getLegacyProductBySlug(slug)!

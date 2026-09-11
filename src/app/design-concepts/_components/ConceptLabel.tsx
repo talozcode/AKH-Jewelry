@@ -2,7 +2,7 @@ import type { CSSProperties } from "react";
 
 // Rendered as the FIRST element inside each concept's own colored section
 // (not a separate neutral strip between sections) so there's no cream gap
-// before a dark/colored concept begins — colors/fonts are passed in per
+// before a dark/colored concept begins - colors/fonts are passed in per
 // concept so the label reads as part of that concept, not the page's own
 // narrator voice.
 export function ConceptLabel({

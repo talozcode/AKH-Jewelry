@@ -50,7 +50,7 @@ export const getProducts = cache(async function getProducts(): Promise<Product[]
   return (data ?? []).map(rowToProduct);
 });
 
-/** Every product regardless of publish state — for the admin product list. */
+/** Every product regardless of publish state - for the admin product list. */
 export const getAllProductsForAdmin = cache(async function getAllProductsForAdmin(): Promise<Product[]> {
   const { data, error } = await supabaseAdmin()
     .from("products")
@@ -135,14 +135,14 @@ function productToRow(product: ProductInput) {
   };
 }
 
-/** Admin only — call `requireAdmin()` before this. */
+/** Admin only - call `requireAdmin()` before this. */
 export async function createProduct(product: ProductInput): Promise<Product> {
   const { data, error } = await supabaseAdmin().from("products").insert(productToRow(product)).select().single();
   if (error) throw new Error(`createProduct: ${error.message}`);
   return rowToProduct(data);
 }
 
-/** Admin only — call `requireAdmin()` before this. */
+/** Admin only - call `requireAdmin()` before this. */
 export async function updateProduct(id: string, product: ProductInput): Promise<Product> {
   const { data, error } = await supabaseAdmin()
     .from("products")
@@ -154,7 +154,7 @@ export async function updateProduct(id: string, product: ProductInput): Promise<
   return rowToProduct(data);
 }
 
-/** Admin only — call `requireAdmin()` before this. */
+/** Admin only - call `requireAdmin()` before this. */
 export async function deleteProduct(id: string): Promise<void> {
   const { error } = await supabaseAdmin().from("products").delete().eq("id", id);
   if (error) throw new Error(`deleteProduct: ${error.message}`);

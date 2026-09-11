@@ -11,7 +11,7 @@ export type SiteSettings = {
 };
 
 // Exact current hardcoded values, transcribed from Footer.tsx/contact/page.tsx
-// — the seed source and the fallback if the singleton row is ever missing.
+// - the seed source and the fallback if the singleton row is ever missing.
 export const DEFAULT_SETTINGS: SiteSettings = {
   contactEmail: "hello@akhjewelry.com",
   instagramUrl: "https://www.instagram.com/akhjewelry",
@@ -34,7 +34,7 @@ export const getSiteSettings = cache(async function getSiteSettings(): Promise<S
   };
 });
 
-/** Admin only — call `requireAdminAction()` before this. */
+/** Admin only - call `requireAdminAction()` before this. */
 export async function updateSiteSettings(settings: SiteSettings): Promise<void> {
   const { error } = await supabaseAdmin()
     .from("site_settings")

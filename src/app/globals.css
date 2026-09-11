@@ -1,21 +1,21 @@
 @import "tailwindcss";
 
 :root {
-  /* "Quiet objects of light" — exact palette from the AKH Website Design
+  /* "Quiet objects of light" - exact palette from the AKH Website Design
      Brief (2026-09-07). Warm Bone / Stone / Deep Olive / Sage Olive / Khaki
      / Soft Black, plus a small Aged Brass metallic accent used sparingly
-     (~5-10% of the visual system — the jewelry itself provides the gold). */
-  --color-charcoal: #34392c; /* Deep Olive — primary dark, primary button fill */
+     (~5-10% of the visual system - the jewelry itself provides the gold). */
+  --color-charcoal: #34392c; /* Deep Olive - primary dark, primary button fill */
   --color-charcoal-soft: #454b39;
-  --color-ivory: #f3efe7; /* Warm Bone — main background */
-  --color-ivory-deep: #d8d0c3; /* Stone — alternate background */
+  --color-ivory: #f3efe7; /* Warm Bone - main background */
+  --color-ivory-deep: #d8d0c3; /* Stone - alternate background */
   --color-stone: #d8d0c3;
-  --color-copper: #747861; /* Sage Olive — brand accent */
-  --color-copper-soft: #999174; /* Khaki — secondary accent */
+  --color-copper: #747861; /* Sage Olive - brand accent */
+  --color-copper-soft: #999174; /* Khaki - secondary accent */
   --color-mineral: #857f68;
   --color-mineral-light: #a79f87;
-  --color-ink: #20211d; /* Soft Black — text */
-  --color-brass: #a68c59; /* Aged Brass — small metallic accent only */
+  --color-ink: #20211d; /* Soft Black - text */
+  --color-brass: #a68c59; /* Aged Brass - small metallic accent only */
 }
 
 @theme inline {
@@ -65,7 +65,7 @@ body {
   opacity: 1;
 }
 
-/* Process ticker on the homepage — content is tripled, so one third of the
+/* Process ticker on the homepage - content is tripled, so one third of the
    translation is a seamless loop. */
 @keyframes marquee {
   from {

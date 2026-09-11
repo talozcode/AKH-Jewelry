@@ -4,7 +4,7 @@ import { cardProducts, heroProduct, quoteProduct } from "../_lib/shared-content"
 import { ConceptLabel } from "./ConceptLabel";
 import { SpecimenLegend } from "./SpecimenLegend";
 
-// Deliberately the one all-sans, no-serif-anywhere concept — modeled on the
+// Deliberately the one all-sans, no-serif-anywhere concept - modeled on the
 // real Wwake research finding: hierarchy flattened almost flat (product
 // names rendered at body size, not a big heading), the "accent color" is
 // literally grey, no filled buttons anywhere. Confidence through restraint
@@ -14,7 +14,7 @@ const INK = "#18181a";
 const GREY = "#8c8a85";
 const RULE = "#e7e4de";
 
-// A gentle neutralizing filter (not a full grayscale) — pushes the photos'
+// A gentle neutralizing filter (not a full grayscale) - pushes the photos'
 // warm cream/tan backdrops toward neutral without flattening the metal and
 // stone color entirely, so they sit quietly on a true-white ground instead
 // of reading as a mismatched golden cast.
@@ -25,8 +25,8 @@ export function ConceptE() {
     <section className="scroll-mt-16" style={{ backgroundColor: WHITE, color: INK }}>
       <ConceptLabel
         id="concept-e"
-        title="E — Gallery (white, restrained)"
-        rationale="A true white-to-off-white ground, near-black ink, one accent: grey. No filled buttons, almost no type hierarchy — the object does the work, not the styling around it."
+        title="E - Gallery (white, restrained)"
+        rationale="A true white-to-off-white ground, near-black ink, one accent: grey. No filled buttons, almost no type hierarchy - the object does the work, not the styling around it."
         titleStyle={{ fontFamily: "var(--font-sans)", fontWeight: 500, fontSize: "1.1rem", color: INK }}
         mutedStyle={{ fontFamily: "var(--font-sans)", fontSize: "0.85rem", color: GREY }}
       />
@@ -79,8 +79,8 @@ export function ConceptE() {
             { name: "Rule line", hex: RULE },
           ]}
           specimens={[
-            { label: "Inter medium — everything", style: { fontFamily: "var(--font-sans)", fontWeight: 500, fontSize: "1.3rem" } },
-            { label: "Inter regular — body", style: { fontFamily: "var(--font-sans)", fontWeight: 400, fontSize: "1rem" } },
+            { label: "Inter medium - everything", style: { fontFamily: "var(--font-sans)", fontWeight: 500, fontSize: "1.3rem" } },
+            { label: "Inter regular - body", style: { fontFamily: "var(--font-sans)", fontWeight: 400, fontSize: "1rem" } },
           ]}
         />
       </div>

@@ -6,7 +6,7 @@ import { Sidebar } from "./Sidebar";
 
 export const metadata: Metadata = {
   // `absolute` (not `default`) so this doesn't also get wrapped by the root
-  // layout's "%s | AKH Jewelry" template — the admin console should never
+  // layout's "%s | AKH Jewelry" template - the admin console should never
   // show the storefront's brand suffix in its tab title.
   title: { template: "%s · AKH Admin", absolute: "Studio Admin" },
   description: "AKH Jewelry studio admin.",

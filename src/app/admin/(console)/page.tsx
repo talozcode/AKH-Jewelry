@@ -42,16 +42,7 @@ function currencySymbol(currency: string) {
 }
 
 export default async function AdminDashboardPage() {
-  const {
-    products,
-    reservationStatusCounts,
-    mostReserved,
-    recentReservations,
-    orderStatusCounts,
-    revenueByCurrency,
-    recentOrders,
-  } = await getDashboardMetrics();
-  const newReservations = reservationStatusCounts.new;
+  const { products, orderStatusCounts, revenueByCurrency, recentOrders } = await getDashboardMetrics();
   const revenueEntries = Object.entries(revenueByCurrency);
   const primaryRevenue = revenueEntries.sort((a, b) => b[1] - a[1])[0];
 
@@ -63,7 +54,7 @@ export default async function AdminDashboardPage() {
       <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-4">
         <Card
           label="Revenue"
-          value={primaryRevenue ? `${currencySymbol(primaryRevenue[0])}${(primaryRevenue[1] / 100).toLocaleString()}` : "—"}
+          value={primaryRevenue ? `${currencySymbol(primaryRevenue[0])}${(primaryRevenue[1] / 100).toLocaleString()}` : "None yet"}
           sub={
             revenueEntries.length > 1
               ? revenueEntries
@@ -76,7 +67,7 @@ export default async function AdminDashboardPage() {
         />
         <Card label="Unfulfilled orders" value={orderStatusCounts.unfulfilled} sub="need shipping" accent="bg-amber-500" />
         <Card label="Products" value={products.total} sub={`${products.published} published, ${products.draft} draft`} accent="bg-slate-900" />
-        <Card label="New reservations" value={newReservations} sub="need a response" accent="bg-sky-500" />
+        <Card label="Shipped orders" value={orderStatusCounts.shipped} accent="bg-sky-500" />
       </div>
 
       <div className="mt-8 grid gap-6 sm:grid-cols-2">
@@ -85,7 +76,7 @@ export default async function AdminDashboardPage() {
             title="Recent orders"
             action={
               <Link href="/admin/orders" className="text-xs font-medium text-slate-500 hover:text-slate-900">
-                View all →
+                View all &rarr;
               </Link>
             }
           >
@@ -96,7 +87,7 @@ export default async function AdminDashboardPage() {
                 {recentOrders.map((o) => (
                   <li key={o.id} className="flex items-center justify-between border-b border-slate-100 py-2 text-sm last:border-0">
                     <span className="text-slate-700">
-                      {o.customer_name} — {o.product_name}
+                      {o.customer_name}, {o.product_name}
                     </span>
                     <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">{o.status}</span>
                   </li>
@@ -112,51 +103,15 @@ export default async function AdminDashboardPage() {
               ))}
             </ul>
           </Panel>
+        </div>
 
+        <div className="space-y-6">
           <Panel title="Products by availability">
             <ul>
               {Object.entries(products.byAvailability).map(([availability, count]) => (
                 <Row key={availability} label={availability} value={count} />
               ))}
             </ul>
-          </Panel>
-        </div>
-
-        <div className="space-y-6">
-          <Panel title="Most-reserved pieces">
-            {mostReserved.length === 0 ? (
-              <p className="text-sm text-slate-400">No reservations yet.</p>
-            ) : (
-              <ul>
-                {mostReserved.map((p) => (
-                  <Row key={p.slug} label={p.name} value={p.count} />
-                ))}
-              </ul>
-            )}
-          </Panel>
-
-          <Panel
-            title="Recent reservations"
-            action={
-              <Link href="/admin/reservations" className="text-xs font-medium text-slate-500 hover:text-slate-900">
-                View all →
-              </Link>
-            }
-          >
-            {recentReservations.length === 0 ? (
-              <p className="text-sm text-slate-400">No reservations yet.</p>
-            ) : (
-              <ul>
-                {recentReservations.map((r) => (
-                  <li key={r.id} className="flex items-center justify-between border-b border-slate-100 py-2 text-sm last:border-0">
-                    <span className="text-slate-700">
-                      {r.customer_name} — {r.product_name}
-                    </span>
-                    <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">{r.status}</span>
-                  </li>
-                ))}
-              </ul>
-            )}
           </Panel>
         </div>
       </div>

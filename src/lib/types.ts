@@ -27,7 +27,7 @@ export type Product = {
   care: string;
   /** Homepage "Selected pieces" grid. Owner-controlled via /admin. */
   isFeatured?: boolean;
-  /** Homepage hero image — exactly one product should have this true. */
+  /** Homepage hero image - exactly one product should have this true. */
   isHero?: boolean;
   /** Unpublished products are hidden from the storefront but visible in /admin. */
   isPublished?: boolean;

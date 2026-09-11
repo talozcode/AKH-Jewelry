@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   // absolute: this page sits outside the (console) group, so it only
-  // inherits the ROOT layout's "%s | AKH Jewelry" template — without
+  // inherits the ROOT layout's "%s | AKH Jewelry" template - without
   // `absolute` it would double up as "Sign in · AKH Admin | AKH Jewelry".
   title: { absolute: "Sign in · AKH Admin" },
   robots: { index: false, follow: false },
@@ -24,7 +24,7 @@ async function signIn(formData: FormData) {
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",
     path: "/",
-    maxAge: 60 * 60 * 24 * 30,
+    maxAge: 60 * 60 * 24 * 7,
   });
   redirect("/admin");
 }
@@ -41,7 +41,7 @@ export default async function LoginPage({
         <p className="font-script text-3xl text-white">akh.</p>
         <h1 className="mt-6 text-xl font-semibold text-white">Studio admin</h1>
         <p className="mt-2 text-sm text-slate-400">
-          Products, reservations and settings for akhjewelry.com. Not public.
+          Products, orders and settings for akhjewelry.com. Not public.
         </p>
 
         <input

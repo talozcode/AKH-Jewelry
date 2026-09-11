@@ -3,7 +3,7 @@ import { ADMIN_COOKIE, safeEqual } from "@/lib/admin/cookie";
 
 /**
  * Next 16 renames the `middleware` convention to `proxy`. This file must
- * export `proxy()` and a `config.matcher`, not `middleware()` — confirmed
+ * export `proxy()` and a `config.matcher`, not `middleware()` - confirmed
  * against this repo's own vendored docs at
  * node_modules/next/dist/docs/01-app/03-api-reference/03-file-conventions/proxy.md.
  *
@@ -20,7 +20,7 @@ export function proxy(req: NextRequest) {
   const cookie = req.cookies.get(ADMIN_COOKIE)?.value;
   const expected = process.env.ADMIN_TOKEN;
 
-  // Fail closed when ADMIN_TOKEN is unset — a missing env var must never
+  // Fail closed when ADMIN_TOKEN is unset - a missing env var must never
   // read as "no auth required."
   if (!cookie || !expected || !safeEqual(cookie, expected)) {
     const url = req.nextUrl.clone();

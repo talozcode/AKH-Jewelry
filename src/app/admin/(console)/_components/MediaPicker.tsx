@@ -6,7 +6,7 @@ import type { MediaAsset } from "@/lib/media";
 /**
  * A flat thumbnail-grid picker over the media library, plus a raw-URL
  * input as an escape hatch (matches wixImg()'s existing pass-through-any-
- * URL behavior). No search/folders — fine at today's upload volume.
+ * URL behavior). No search/folders - fine at today's upload volume.
  */
 export function MediaPicker({
   label,

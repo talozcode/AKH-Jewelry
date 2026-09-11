@@ -1,7 +1,7 @@
 /**
  * One-time seed: inserts the 15 real legacy products into Supabase.
  * Run once against a fresh database: `npm run seed`
- * Safe to re-run — upserts on slug, so it won't duplicate rows.
+ * Safe to re-run - upserts on slug, so it won't duplicate rows.
  */
 import { legacyProducts } from "../src/lib/legacy-products-seed";
 import { supabaseAdmin } from "../src/lib/supabase/server";

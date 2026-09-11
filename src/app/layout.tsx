@@ -4,7 +4,7 @@ import "./globals.css";
 
 // Editorial headline serif per the AKH design brief (Cormorant Garamond,
 // with EB Garamond as the named alternative). Deliberately not the
-// handwritten logo font — that stays scoped to the wordmark only.
+// handwritten logo font - that stays scoped to the wordmark only.
 const cormorant = Cormorant_Garamond({
   variable: "--font-cormorant",
   subsets: ["latin"],
@@ -28,13 +28,13 @@ const caveat = Caveat({
 export const metadata: Metadata = {
   metadataBase: new URL("https://akh-jewelry.vercel.app"),
   title: {
-    default: "AKH — Objects of Light",
+    default: "AKH - Objects of Light",
     template: "%s | AKH Jewelry",
   },
   description:
     "AKH is an independent jewelry studio. Jewelry shaped by transformation, time and the beauty of imperfection.",
   openGraph: {
-    title: "AKH — Objects of Light",
+    title: "AKH - Objects of Light",
     description:
       "Jewelry shaped by transformation, time and the beauty of imperfection.",
     siteName: "AKH Jewelry",

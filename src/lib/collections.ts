@@ -81,14 +81,14 @@ function collectionToRow(collection: CollectionInput) {
   };
 }
 
-/** Admin only — call `requireAdminAction()` before this. */
+/** Admin only - call `requireAdminAction()` before this. */
 export async function createCollection(collection: CollectionInput): Promise<Collection> {
   const { data, error } = await supabaseAdmin().from("collections").insert(collectionToRow(collection)).select().single();
   if (error) throw new Error(`createCollection: ${error.message}`);
   return rowToCollection(data);
 }
 
-/** Admin only — call `requireAdminAction()` before this. */
+/** Admin only - call `requireAdminAction()` before this. */
 export async function updateCollection(id: string, collection: CollectionInput): Promise<Collection> {
   const { data, error } = await supabaseAdmin()
     .from("collections")
@@ -100,7 +100,7 @@ export async function updateCollection(id: string, collection: CollectionInput):
   return rowToCollection(data);
 }
 
-/** Admin only — call `requireAdminAction()` before this. */
+/** Admin only - call `requireAdminAction()` before this. */
 export async function deleteCollection(id: string): Promise<void> {
   const { error } = await supabaseAdmin().from("collections").delete().eq("id", id);
   if (error) throw new Error(`deleteCollection: ${error.message}`);

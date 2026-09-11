@@ -4,13 +4,13 @@ import { Product } from "./types";
 // one system (Title Case) in place of the live site's mix of ALL CAPS and
 // Title Case, but every price, material, stone and story detail below is
 // the real one from the product's live page. Images are the actual Wix
-// media files for that product — see src/lib/wixImage.ts.
+// media files for that product - see src/lib/wixImage.ts.
 //
-// FROZEN as of the CMS build (2026-09-09) — this is no longer the live data
+// FROZEN as of the CMS build (2026-09-09) - this is no longer the live data
 // source (see src/lib/products.ts, now Supabase-backed). This file exists
 // only as (a) the one-time seed for scripts/seed-products.ts and (b) the
 // data source for the frozen /design-concepts historical page, which is
-// deliberately decoupled from live DB state. Do not add new products here —
+// deliberately decoupled from live DB state. Do not add new products here -
 // add them through the CMS at /admin instead.
 export const legacyProducts: Product[] = [
   {
@@ -21,9 +21,9 @@ export const legacyProducts: Product[] = [
     currency: "ILS",
     material: "Sterling silver",
     stone: "Pink tourmaline",
-    measurements: "Size 51 (EU) — resizing on request",
+    measurements: "Size 51 (EU) - resizing on request",
     availability: "In Stock",
-    dispatch: "Ships in 2–4 business days",
+    dispatch: "Ships in 2-4 business days",
     images: [
       "682d76e02811499b9d6b09bab93722ba.jpg",
       "13b41011ba844bf2a6dea1a4c1df04b8.jpg",
@@ -46,9 +46,9 @@ export const legacyProducts: Product[] = [
     currency: "ILS",
     material: "Sterling silver",
     stone: "2 white sapphires",
-    measurements: "Size 51 (EU) — resizing on request",
+    measurements: "Size 51 (EU) - resizing on request",
     availability: "In Stock",
-    dispatch: "Ships in 2–4 business days",
+    dispatch: "Ships in 2-4 business days",
     images: [
       "064e5acf9289461bb6cb7002f2e25a50.jpg",
       "852eca58d04346518c2262518ef2651a.jpg",
@@ -57,7 +57,7 @@ export const legacyProducts: Product[] = [
     tagline: "Stillness, set in silver.",
     description:
       "A sterling silver band set with two white sapphires, cast in size 51. Resizing is available on request rather than offered as a fixed size run.",
-    story: "Named for a blessing of peace within one's own walls — quiet held inside a structure, not outside of it.",
+    story: "Named for a blessing of peace within one's own walls - quiet held inside a structure, not outside of it.",
     craftsmanship: "Hand-carved and cast, then set with two matched white sapphires and polished by hand.",
     care: "Store separately to avoid surface scratching. Clean with a jewelry-safe silver cloth.",
   },
@@ -81,7 +81,7 @@ export const legacyProducts: Product[] = [
     tagline: "One stone, cast in gold.",
     description:
       "A 1.66ct emerald set in gold, priced here in 9k with 14k and 18k available on request. Made to order once the piece is confirmed. Note: the second reference photo is an AI-generated visualization of the setting, not the finished piece.",
-    story: "Built around one hand-selected emerald rather than a repeatable design — the stone comes first, the setting follows.",
+    story: "Built around one hand-selected emerald rather than a repeatable design - the stone comes first, the setting follows.",
     craftsmanship: "The band is fabricated to the stone's own shape once your gold and size are confirmed.",
     care: "Emeralds are softer than diamonds and can be included internally. Avoid ultrasonic cleaners; wipe with a damp soft cloth only.",
   },
@@ -95,7 +95,7 @@ export const legacyProducts: Product[] = [
     stone: "2mm white sapphire",
     measurements: "Organic, asymmetric band shape",
     availability: "In Stock",
-    dispatch: "Ships in 2–4 business days",
+    dispatch: "Ships in 2-4 business days",
     images: ["9e0443bc6f7240bd85d03905a90cee33.jpeg", "ecf790fe2d5a4da4a7c5028e4e4bc06f.png"],
     tagline: "A single stone, set low and worn close.",
     description:
@@ -132,9 +132,9 @@ export const legacyProducts: Product[] = [
     currency: "ILS",
     material: "Sterling silver",
     stone: "Kunzite",
-    measurements: "Size 55 (EU) — resizing on request",
+    measurements: "Size 55 (EU) - resizing on request",
     availability: "In Stock",
-    dispatch: "Ships in 2–4 business days",
+    dispatch: "Ships in 2-4 business days",
     limitedEdition: "SKU 014",
     images: [
       "e9089090481248e2850d43a1bdfe9c15.jpg",
@@ -143,9 +143,9 @@ export const legacyProducts: Product[] = [
     ],
     tagline: "Best worn after dark.",
     description:
-      "A sterling silver ring set with kunzite, a stone that can fade in constant sunlight — which makes this, by design, a ring for evenings.",
+      "A sterling silver ring set with kunzite, a stone that can fade in constant sunlight - which makes this, by design, a ring for evenings.",
     story:
-      "Levone was actually not inspired by a flower, but by the moon. Because kunzite's color can fade with sun exposure, it's recommended to wear this one at night — a ring for a moonlight date.",
+      "Levone was actually not inspired by a flower, but by the moon. Because kunzite's color can fade with sun exposure, it's recommended to wear this one at night - a ring for a moonlight date.",
     craftsmanship: "Hand-carved, cast, then set with kunzite and finished at the bench.",
     care: "Keep out of direct, prolonged sunlight to protect the stone's color. Polish gently with a silver cloth.",
   },
@@ -157,9 +157,9 @@ export const legacyProducts: Product[] = [
     currency: "ILS",
     material: "Sterling silver",
     stone: "7 garnets",
-    measurements: "Size 56 (EU) — resizing on request",
+    measurements: "Size 56 (EU) - resizing on request",
     availability: "In Stock",
-    dispatch: "Ships in 2–4 business days",
+    dispatch: "Ships in 2-4 business days",
     limitedEdition: "SKU 012",
     images: [
       "3ecae421f30d48329e7b8fc53d5ce00a.jpg",
@@ -181,9 +181,9 @@ export const legacyProducts: Product[] = [
     currency: "ILS",
     material: "Sterling silver",
     stone: "Purple spinel",
-    measurements: "Size 54 (EU) — resizing on request",
+    measurements: "Size 54 (EU) - resizing on request",
     availability: "In Stock",
-    dispatch: "Ships in 2–4 business days",
+    dispatch: "Ships in 2-4 business days",
     limitedEdition: "SKU 013",
     images: [
       "6f9b76fba93c46c7961d50343067d9c2.jpg",
@@ -206,11 +206,11 @@ export const legacyProducts: Product[] = [
     material: "Sterling silver",
     measurements: "Size 48 (EU)",
     availability: "In Stock",
-    dispatch: "Ships in 2–4 business days",
+    dispatch: "Ships in 2-4 business days",
     images: ["b65c6e2465eb46549abc4ef917ac781d.jpg", "9059998a3f584fbda668f4854198b469.jpg"],
     tagline: "The studio's simplest silver band.",
     description: "A plain sterling silver ring, cast in size 48. The studio's most affordable, everyday piece.",
-    story: "Kept deliberately unadorned — a starting point for stacking with the studio's stone rings.",
+    story: "Kept deliberately unadorned - a starting point for stacking with the studio's stone rings.",
     craftsmanship: "Machine-drawn wire, hand-soldered closed and polished, then hand-checked for roundness.",
     care: "Durable for daily wear. Remove before swimming in chlorinated water.",
   },
@@ -224,7 +224,7 @@ export const legacyProducts: Product[] = [
     stone: "2mm white sapphire",
     measurements: "40mm chain; length and thickness can vary the price",
     availability: "In Stock",
-    dispatch: "Ships in 2–4 business days",
+    dispatch: "Ships in 2-4 business days",
     images: ["5eb6f38e9e59426aa75a4b9c0dbe0c32.jpeg"],
     tagline: "A small word, worn close to the throat.",
     description:
@@ -239,7 +239,7 @@ export const legacyProducts: Product[] = [
     category: "Necklaces",
     price: 11000,
     currency: "ILS",
-    material: "9–14k yellow gold, 40mm chain",
+    material: "9-14k yellow gold, 40mm chain",
     stone: "1.14ct Nigerian emerald, CGRL certified",
     measurements: "40mm chain; 14/18k or other lengths priced accordingly",
     availability: "Made to Order",
@@ -248,8 +248,8 @@ export const legacyProducts: Product[] = [
     images: ["a5d14ff0ef8d4873b925fc364c68c23f.jpeg"],
     tagline: "A certified stone, given its own pendant.",
     description:
-      "A 1.14ct Nigerian emerald, CGRL certified, cast for 9–14k yellow gold on a 40mm necklace. Price shown is for 9k gold; 14/18k or a different chain length is priced accordingly.",
-    story: "One of the studio's certified stone pieces — the emerald's paperwork travels with the necklace.",
+      "A 1.14ct Nigerian emerald, CGRL certified, cast for 9-14k yellow gold on a 40mm necklace. Price shown is for 9k gold; 14/18k or a different chain length is priced accordingly.",
+    story: "One of the studio's certified stone pieces - the emerald's paperwork travels with the necklace.",
     craftsmanship: "Bezel hand-fabricated to the stone's exact girdle before the chain is attached.",
     care: "Avoid ultrasonic cleaners and heat. Store in the supplied pouch, away from other jewelry.",
   },
@@ -287,7 +287,7 @@ export const legacyProducts: Product[] = [
     stone: "Emerald",
     measurements: "Necklace length 45cm",
     availability: "In Stock",
-    dispatch: "Ships in 2–4 business days",
+    dispatch: "Ships in 2-4 business days",
     limitedEdition: "SKU 011",
     images: [
       "9be53e2123584c17a251fd96ec1af638.jpg",
@@ -311,7 +311,7 @@ export const legacyProducts: Product[] = [
     stone: "3 synthetic rubies",
     measurements: "Necklace length 45cm",
     availability: "In Stock",
-    dispatch: "Ships in 2–4 business days",
+    dispatch: "Ships in 2-4 business days",
     limitedEdition: "SKU 010",
     images: ["e5d94cf386c247f7b0dc9af7129eced7.jpg", "a4183f29ce6d40b8aac3e496ee1db8b8.jpeg"],
     tagline: "Three small rubies, on a fine chain.",
@@ -330,7 +330,7 @@ export const legacyProducts: Product[] = [
     stone: "Grey spinel",
     measurements: "One size",
     availability: "In Stock",
-    dispatch: "Ships in 2–4 business days",
+    dispatch: "Ships in 2-4 business days",
     images: ["140241ba3a4648c3a32304eada7ec87c.jpeg"],
     tagline: "Solid silver, set with grey spinel.",
     description: "A sterling silver bangle set with grey spinel.",

@@ -1,5 +1,4 @@
 import { supabaseAdmin } from "../supabase/server";
-import { getMostReservedProducts, getReservationCountsByStatus } from "../db/reservations";
 import { getOrderCountsByStatus, getOrders, getRevenueByCurrency } from "../db/orders";
 
 export async function getProductCounts() {
@@ -22,26 +21,12 @@ export async function getProductCounts() {
   return { total: rows.length, byCategory, byAvailability, published, draft };
 }
 
-export async function getRecentReservations(limit = 5) {
-  const { data, error } = await supabaseAdmin()
-    .from("reservations")
-    .select("*")
-    .order("created_at", { ascending: false })
-    .limit(limit);
-  if (error) throw new Error(`getRecentReservations: ${error.message}`);
-  return data ?? [];
-}
-
 export async function getDashboardMetrics() {
-  const [products, reservationStatusCounts, mostReserved, recentReservations, orderStatusCounts, revenueByCurrency, recentOrders] =
-    await Promise.all([
-      getProductCounts(),
-      getReservationCountsByStatus(),
-      getMostReservedProducts(5),
-      getRecentReservations(5),
-      getOrderCountsByStatus(),
-      getRevenueByCurrency(),
-      getOrders().then((orders) => orders.slice(0, 5)),
-    ]);
-  return { products, reservationStatusCounts, mostReserved, recentReservations, orderStatusCounts, revenueByCurrency, recentOrders };
+  const [products, orderStatusCounts, revenueByCurrency, recentOrders] = await Promise.all([
+    getProductCounts(),
+    getOrderCountsByStatus(),
+    getRevenueByCurrency(),
+    getOrders().then((orders) => orders.slice(0, 5)),
+  ]);
+  return { products, orderStatusCounts, revenueByCurrency, recentOrders };
 }

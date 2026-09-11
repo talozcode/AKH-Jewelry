@@ -7,6 +7,10 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "no-dashes": "bash scripts/no-dashes.sh",
     "seed": "dotenv -e .env.local -- tsx scripts/seed-products.ts",
     "seed:pages": "dotenv -e .env.local -- tsx scripts/seed-pages.ts"
   },
@@ -30,6 +34,8 @@
     "tailwindcss": "^4",
     "tsx": "^4.23.13",
     "typescript": "^5",
+    "vite-tsconfig-paths": "^6.1.1",
+    "vitest": "^4.1.11",
     "ws": "^8.21.3"
   }
 }

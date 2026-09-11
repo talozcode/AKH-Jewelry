@@ -4,7 +4,7 @@ import { timingSafeEqual } from "node:crypto";
 import { ADMIN_COOKIE } from "./cookie";
 
 /**
- * Admin gate for the AKH CMS. One owner, one shared token, no user table —
+ * Admin gate for the AKH CMS. One owner, one shared token, no user table,
  * see CLAUDE.md's CMS section for why this pattern (borrowed from
  * studio-tooka, this user's Etsy shop app) instead of a full auth product.
  *
@@ -12,7 +12,7 @@ import { ADMIN_COOKIE } from "./cookie";
  *   - `src/proxy.ts` compares the value at the edge, so a bad cookie never
  *     reaches a page that queries the database;
  *   - `requireAdminPage()` / `requireAdminAction()` below are the
- *     authoritative check — the one that still holds if the proxy matcher
+ *     authoritative check: the one that still holds if the proxy matcher
  *     is ever edited.
  */
 
@@ -40,7 +40,7 @@ export async function requireAdminPage(): Promise<void> {
 
 /**
  * Gate a Server Action. Call this as the first line of every admin mutation
- * (create/update/delete product, update reservation status, upload image) —
+ * (create/update/delete product, update order status, upload image),
  * the proxy matcher doesn't cover Server Actions, so this is the real check
  * for those.
  */

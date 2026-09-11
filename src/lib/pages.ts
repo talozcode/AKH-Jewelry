@@ -102,7 +102,7 @@ export type PageContentMap = {
 
 export type PageContent<K extends PageKey = PageKey> = PageContentMap[K];
 
-// Exact current hardcoded copy, transcribed byte-for-byte — this is both
+// Exact current hardcoded copy, transcribed byte-for-byte: this is both
 // (a) the fallback merged under any missing/partial DB value in getPage(),
 // and (b) the one-time seed source (scripts/seed-pages.ts). Keeping seed
 // and fallback as the same object means there is no copy/paste drift
@@ -118,11 +118,11 @@ export const DEFAULTS: PageContentMap = {
     editorialImageAlt: "",
     studioStoryHeading: "A studio, not a factory",
     studioStoryBody:
-      "AKH is a one-studio jewelry practice working in sterling silver and gold, set with hand-selected stones. Every piece is carved, cast, set and finished on the same bench, in small batches rather than continuous production — quiet objects, made slowly, meant to be worn for years.",
+      "AKH is a one-studio jewelry practice working in sterling silver and gold, set with hand-selected stones. Every piece is carved, cast, set and finished on the same bench, in small batches rather than continuous production: quiet objects, made slowly, meant to be worn for years.",
     studioStoryCtaLabel: "Read the full story",
     nameMeaningEyebrow: "The name",
     nameMeaningBody:
-      "In Ancient Egypt, akh named the part of a person that becomes radiant and enduring — light, transformation, permanence. AKH borrows the feeling, not the imagery: pieces meant to last, worn until they carry their own history.",
+      "In Ancient Egypt, akh named the part of a person that becomes radiant and enduring: light, transformation, permanence. AKH borrows the feeling, not the imagery: pieces meant to last, worn until they carry their own history.",
     closingCtaLabel: "Shop the collection",
   },
   story: {
@@ -132,7 +132,7 @@ export const DEFAULTS: PageContentMap = {
     bodyProse: [
       "AKH is a one-studio jewelry practice, founded to make pieces that mean something to the person wearing them, not just to the market they're sold into.",
       "Every design starts as a hand-carved wax model on the same bench where it will later be cast, set and finished. There is no design software between the idea and the object, and no factory between the studio and the customer.",
-      "Materials are chosen deliberately: sterling silver and 9–18k gold, set with stones sourced directly — including Nigerian emeralds, sapphires and garnets selected one at a time. Larger stones carry independent CGRL certification.",
+      "Materials are chosen deliberately: sterling silver and 9-18k gold, set with stones sourced directly, including Nigerian emeralds, sapphires and garnets selected one at a time. Larger stones carry independent CGRL certification.",
       "What makes the process distinctive is its scale. Pieces are made in small, numbered batches, and one-of-one settings are built around a single stone and never repeated once it's gone.",
     ].join("\n\n"),
     closingHeading: "Have a question about a piece, or an idea for one?",
@@ -149,17 +149,17 @@ export const DEFAULTS: PageContentMap = {
       { title: "Your piece is handcrafted", body: "Carved, cast, set and finished on our bench, then shipped with its own care card." },
     ],
     closingHeading: "Ready to begin?",
-    closingBody: "Bespoke commissions typically take 3–5 weeks from approved design to delivery, depending on stone availability.",
+    closingBody: "Bespoke commissions typically take 3-5 weeks from approved design to delivery, depending on stone availability.",
     closingCtaLabel: "Begin a bespoke piece",
   },
   faq: {
     items: [
       { question: "Who makes AKH jewelry?", answer: "Every piece is made by hand in a single studio, from a hand-carved wax model through casting, setting and finishing." },
-      { question: "Are the materials genuine?", answer: "Yes. We use sterling silver and 9–18k gold, set with genuine stones including Nigerian emeralds and white sapphires, hand-selected by the studio. Larger stones are independently certified (CGRL)." },
+      { question: "Are the materials genuine?", answer: "Yes. We use sterling silver and 9-18k gold, set with genuine stones including Nigerian emeralds and white sapphires, hand-selected by the studio. Larger stones are independently certified (CGRL)." },
       { question: "How do I find my ring size?", answer: "See our size guide, or email hello@akhjewelry.com with a ring you already own that fits and we'll help you match it." },
-      { question: "When will my order ship?", answer: "In-stock pieces ship in 1–4 business days. Made-to-order and bespoke pieces take 3–4 weeks; the exact estimate is shown on each product page." },
+      { question: "When will my order ship?", answer: "In-stock pieces ship in 1-4 business days. Made-to-order and bespoke pieces take 3-4 weeks; the exact estimate is shown on each product page." },
       { question: "Can I return a piece?", answer: "In-stock pieces can be returned within 14 days in unworn condition. Made-to-order and one-of-one pieces are final sale, as noted on the product page." },
-      { question: "Is checkout secure?", answer: "Yes — payments are processed securely at checkout. Online checkout is launching soon; in the meantime, email hello@akhjewelry.com to reserve a piece." },
+      { question: "Is checkout secure?", answer: "Yes. Payments are processed securely through Stripe at checkout; card details never reach AKH's own servers." },
       { question: "What if my piece needs repair?", answer: "Email hello@akhjewelry.com with photos of the issue. Studio-made pieces are covered for manufacturing defects for 12 months." },
     ],
   },
@@ -168,7 +168,7 @@ export const DEFAULTS: PageContentMap = {
     sections: [
       {
         heading: "Shipping",
-        body: "In-stock pieces ship within 1–4 business days. Made-to-order and bespoke pieces are handcrafted after your order is placed and typically ship in 3–4 weeks; each product page shows its exact estimate.",
+        body: "In-stock pieces ship within 1-4 business days. Made-to-order and bespoke pieces are handcrafted after your order is placed and typically ship in 3-4 weeks; each product page shows its exact estimate.",
       },
       {
         heading: "International orders",
@@ -206,7 +206,7 @@ export const DEFAULTS: PageContentMap = {
   },
   contact: {
     heading: "Get in touch",
-    intro: "For orders, bespoke enquiries, press or repairs, email the studio directly — we read and reply to every message ourselves.",
+    intro: "For orders, bespoke enquiries, press or repairs, email the studio directly. We read and reply to every message ourselves.",
     bodyProse: "Studio based in Israel. Bespoke consultations available by video call on request.",
   },
   terms: {
@@ -219,17 +219,23 @@ export const DEFAULTS: PageContentMap = {
 };
 
 /**
- * Shallow-merges the DB row's content over DEFAULTS[key], so a missing or
- * partial jsonb value never crashes rendering — matches getHeroProduct()'s
- * existing fall-back-to-something-sane pattern in products.ts.
+ * Shallow-merges a DB row's content over DEFAULTS[key], so a missing or
+ * partial jsonb value never crashes rendering: matches getHeroProduct()'s
+ * existing fall-back-to-something-sane pattern in products.ts. Pure and
+ * exported separately from getPage() so this merge behavior is testable
+ * without a Supabase client (see pages.test.ts).
  */
+export function mergePageContent<K extends PageKey>(key: K, dbContent: Partial<PageContent<K>> | undefined | null): PageContent<K> {
+  return { ...DEFAULTS[key], ...(dbContent ?? undefined) };
+}
+
 export const getPage = cache(async function getPage<K extends PageKey>(key: K): Promise<PageContent<K>> {
   const { data, error } = await supabaseAdmin().from("pages").select("content").eq("key", key).maybeSingle();
   if (error) throw new Error(`getPage(${key}): ${error.message}`);
-  return { ...DEFAULTS[key], ...(data?.content as Partial<PageContent<K>> | undefined) };
+  return mergePageContent(key, data?.content as Partial<PageContent<K>> | undefined);
 });
 
-/** Admin only — call `requireAdminAction()` before this. */
+/** Admin only: call `requireAdminAction()` before this. */
 export async function updatePage<K extends PageKey>(key: K, content: PageContent<K>): Promise<void> {
   const { error } = await supabaseAdmin()
     .from("pages")

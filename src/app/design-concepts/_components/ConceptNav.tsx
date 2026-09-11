@@ -1,11 +1,11 @@
 import Link from "next/link";
 
 const LINKS = [
-  { href: "#concept-a", label: "A — Earth & Hand" },
-  { href: "#concept-b", label: "B — Talisman" },
-  { href: "#concept-c", label: "C — Rooted" },
-  { href: "#concept-d", label: "D — One of One" },
-  { href: "#concept-e", label: "E — Gallery" },
+  { href: "#concept-a", label: "A - Earth & Hand" },
+  { href: "#concept-b", label: "B - Talisman" },
+  { href: "#concept-c", label: "C - Rooted" },
+  { href: "#concept-d", label: "D - One of One" },
+  { href: "#concept-e", label: "E - Gallery" },
 ];
 
 export function ConceptNav() {

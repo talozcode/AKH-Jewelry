@@ -74,7 +74,7 @@ export async function uploadProductImageAction(
   try {
     const bytes = Buffer.from(await file.arrayBuffer());
     // Resize the longest edge down to 1800px so an unresized phone photo
-    // never lands in Storage at full size — Wix's CDN used to do this for
+    // never lands in Storage at full size - Wix's CDN used to do this for
     // free; Supabase Storage doesn't.
     const resized = await sharp(bytes)
       .rotate() // respect EXIF orientation before stripping it

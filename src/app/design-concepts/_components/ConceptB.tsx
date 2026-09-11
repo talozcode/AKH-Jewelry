@@ -20,8 +20,8 @@ export function ConceptB() {
     <section className="scroll-mt-16" style={{ backgroundColor: SOOT, color: BONE }}>
       <ConceptLabel
         id="concept-b"
-        title="B — Talisman (ritual object)"
-        rationale="A dark, reverent register — soot and bone, one object lit like a museum vitrine. 'Talisman' through presentation and materiality, not borrowed symbols."
+        title="B - Talisman (ritual object)"
+        rationale="A dark, reverent register - soot and bone, one object lit like a museum vitrine. 'Talisman' through presentation and materiality, not borrowed symbols."
         titleStyle={{ fontFamily: italiana.style.fontFamily, fontSize: "1.5rem", color: BONE }}
         mutedStyle={{ fontFamily: cormorant.style.fontFamily, fontSize: "0.9rem", color: `${BONE}99` }}
       />
@@ -66,7 +66,7 @@ export function ConceptB() {
                   </div>
                 </div>
                 <p className={cormorant.className} style={{ fontStyle: "italic", marginTop: "0.9rem", fontSize: "1rem", color: `${BONE}cc` }}>
-                  Plate {["I", "II", "III"][i]} — {p.name}, {p.material.split(",")[0].toLowerCase()}
+                  Plate {["I", "II", "III"][i]} - {p.name}, {p.material.split(",")[0].toLowerCase()}
                   {p.stone ? `, ${p.stone.split(",")[0].toLowerCase()}` : ""}
                 </p>
               </div>
@@ -88,8 +88,8 @@ export function ConceptB() {
             { name: "Verdigris", hex: "#4f6357" },
           ]}
           specimens={[
-            { label: "Italiana — display", style: { fontFamily: italiana.style.fontFamily, fontSize: "1.5rem" } },
-            { label: "Cormorant Garamond — captions", style: { fontFamily: cormorant.style.fontFamily, fontStyle: "italic", fontSize: "1.25rem" } },
+            { label: "Italiana - display", style: { fontFamily: italiana.style.fontFamily, fontSize: "1.5rem" } },
+            { label: "Cormorant Garamond - captions", style: { fontFamily: cormorant.style.fontFamily, fontStyle: "italic", fontSize: "1.25rem" } },
           ]}
         />
       </div>

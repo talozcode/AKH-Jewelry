@@ -18,7 +18,7 @@ export function ConceptD() {
     <section className="scroll-mt-16" style={{ backgroundColor: PAPER, color: NAVY }}>
       <ConceptLabel
         id="concept-d"
-        title="D — One of One (artisan's ledger)"
+        title="D - One of One (artisan's ledger)"
         rationale="Cream paper, navy ink, one wax-seal red. Every piece framed as a numbered, one-of-one ledger entry rather than a catalogue listing."
         titleStyle={{ fontFamily: garamond.style.fontFamily, fontStyle: "italic", fontSize: "1.6rem", color: NAVY }}
         mutedStyle={{ fontFamily: mono.style.fontFamily, fontSize: "0.75rem", color: SEAL }}
@@ -27,7 +27,7 @@ export function ConceptD() {
         <div className="mx-auto grid max-w-6xl grid-cols-1 items-center gap-10 px-6 py-16 lg:grid-cols-[1fr_0.8fr]">
           <div>
             <p className={mono.className} style={{ fontSize: "0.75rem", letterSpacing: "0.08em", color: SEAL }}>
-              EST. — HANDCRAFTED IN SMALL BATCHES
+              EST. - HANDCRAFTED IN SMALL BATCHES
             </p>
             <h3 className={garamond.className} style={{ fontStyle: "italic", fontSize: "2.75rem", lineHeight: 1.15, marginTop: "0.75rem" }}>
               No. 001 through one-of-one.
@@ -96,8 +96,8 @@ export function ConceptD() {
             { name: "Rule line", hex: RULE },
           ]}
           specimens={[
-            { label: "EB Garamond italic — names", style: { fontFamily: garamond.style.fontFamily, fontStyle: "italic", fontSize: "1.5rem" } },
-            { label: "Space Mono — ledger data", style: { fontFamily: mono.style.fontFamily, fontSize: "1rem" } },
+            { label: "EB Garamond italic - names", style: { fontFamily: garamond.style.fontFamily, fontStyle: "italic", fontSize: "1.5rem" } },
+            { label: "Space Mono - ledger data", style: { fontFamily: mono.style.fontFamily, fontSize: "1rem" } },
           ]}
         />
       </div>

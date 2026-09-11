@@ -8,7 +8,7 @@ export type MediaAsset = {
   uploadedAt: string;
 };
 
-/** Admin only — call `requireAdminAction()`/`requireAdminPage()` before this. */
+/** Admin only - call `requireAdminAction()`/`requireAdminPage()` before this. */
 export async function listMediaAssets(): Promise<MediaAsset[]> {
   const { data, error } = await supabaseAdmin().from("media_assets").select("*").order("uploaded_at", { ascending: false });
   if (error) throw new Error(`listMediaAssets: ${error.message}`);
@@ -21,7 +21,7 @@ export async function listMediaAssets(): Promise<MediaAsset[]> {
   }));
 }
 
-/** Admin only — call `requireAdminAction()` before this. */
+/** Admin only - call `requireAdminAction()` before this. */
 export async function deleteMediaAsset(id: string): Promise<void> {
   const db = supabaseAdmin();
   const { data: asset, error: fetchError } = await db.from("media_assets").select("storage_path").eq("id", id).maybeSingle();

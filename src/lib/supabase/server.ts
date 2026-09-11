@@ -5,14 +5,14 @@ import type { Database } from "./database.types";
 // This app never uses Supabase Realtime, but supabase-js always constructs
 // a RealtimeClient internally, which needs a WebSocket constructor. Next.js's
 // server runtime has one; a plain `tsx` script (e.g. scripts/seed-products.ts)
-// on Node 20 does not — fall back to the `ws` package there.
+// on Node 20 does not - fall back to the `ws` package there.
 const wsTransport =
   typeof WebSocket === "undefined" ? (createRequire(import.meta.url)("ws") as typeof import("ws")) : undefined;
 
 /**
  * Server-only Supabase client, authenticated with the secret key (bypasses
  * RLS). Never import this from a Client Component or anything that ships to
- * the browser — it belongs in Server Components, Server Actions, and
+ * the browser - it belongs in Server Components, Server Actions, and
  * scripts only. There is deliberately no browser/publishable-key client
  * anywhere in this app: every read and write goes through the server.
  */

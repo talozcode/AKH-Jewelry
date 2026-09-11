@@ -21,7 +21,7 @@ export default async function Home() {
 
   return (
     <>
-      {/* Hero — a strong photographic moment, not a designed graphic composition */}
+      {/* Hero - a strong photographic moment, not a designed graphic composition */}
       <section className="relative flex min-h-[90vh] items-end overflow-hidden bg-charcoal text-ivory">
         <div className="absolute inset-0">
           <ProductImage idExt={hero.images[0]} alt={hero.name} w={1800} h={2250} className="opacity-90" />
@@ -46,7 +46,7 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* Selected pieces — product discovery, quiet and quick */}
+      {/* Selected pieces - product discovery, quiet and quick */}
       <section className="mx-auto max-w-6xl px-6 py-20 sm:px-8">
         <div className="flex items-end justify-between">
           <h2 className="font-display text-3xl italic sm:text-4xl">{content.sectionHeadingSelectedPieces}</h2>
@@ -61,7 +61,7 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* Editorial photography — let the image carry the moment */}
+      {/* Editorial photography - let the image carry the moment */}
       <section className="relative flex h-[70vh] items-center justify-center overflow-hidden">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={content.editorialImageUrl} alt={content.editorialImageAlt} className="absolute inset-0 h-full w-full object-cover" />
@@ -77,7 +77,7 @@ export default async function Home() {
         </Link>
       </section>
 
-      {/* The meaning behind the name — quiet, deliberately small */}
+      {/* The meaning behind the name - quiet, deliberately small */}
       <section style={{ backgroundColor: "var(--color-ivory-deep)" }}>
         <div className="mx-auto max-w-xl px-6 py-16 text-center sm:px-8">
           <p className="text-xs uppercase tracking-[0.14em]" style={{ color: "var(--color-brass)" }}>

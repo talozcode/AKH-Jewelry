@@ -1,7 +1,7 @@
 import Stripe from "stripe";
 
 /**
- * Server-only Stripe client. Never import this from a Client Component —
+ * Server-only Stripe client. Never import this from a Client Component -
  * it belongs in Server Actions and Route Handlers only, same discipline as
  * supabaseAdmin() in src/lib/supabase/server.ts.
  *
