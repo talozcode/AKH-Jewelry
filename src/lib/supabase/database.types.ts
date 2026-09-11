@@ -134,7 +134,10 @@ export type Database = {
           stripe_payment_intent_id: string | null;
           amount_total: number;
           currency: string;
-          status: "unfulfilled" | "shipped";
+          status: "unfulfilled" | "shipped" | "refunded";
+          stripe_refund_id: string | null;
+          refunded_at: string | null;
+          amount_refunded: number;
           anonymized_at: string | null;
           created_at: string;
           updated_at: string;

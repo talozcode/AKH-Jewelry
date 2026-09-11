@@ -51,7 +51,7 @@ export default async function AdminDashboardPage() {
       <h1 className="text-2xl font-semibold text-slate-900">Dashboard</h1>
       <p className="mt-1 text-sm text-slate-500">An overview of the shop right now.</p>
 
-      <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-4">
+      <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-5">
         <Card
           label="Revenue"
           value={primaryRevenue ? `${currencySymbol(primaryRevenue[0])}${(primaryRevenue[1] / 100).toLocaleString()}` : "None yet"}
@@ -61,13 +61,14 @@ export default async function AdminDashboardPage() {
                   .slice(1)
                   .map(([c, v]) => `+ ${currencySymbol(c)}${(v / 100).toLocaleString()}`)
                   .join(", ")
-              : "all-time, paid orders"
+              : "net of refunds, all-time"
           }
           accent="bg-emerald-500"
         />
         <Card label="Unfulfilled orders" value={orderStatusCounts.unfulfilled} sub="need shipping" accent="bg-amber-500" />
         <Card label="Products" value={products.total} sub={`${products.published} published, ${products.draft} draft`} accent="bg-slate-900" />
         <Card label="Shipped orders" value={orderStatusCounts.shipped} accent="bg-sky-500" />
+        <Card label="Refunded orders" value={orderStatusCounts.refunded} accent="bg-red-500" />
       </div>
 
       <div className="mt-8 grid gap-6 sm:grid-cols-2">

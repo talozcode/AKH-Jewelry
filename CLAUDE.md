@@ -457,6 +457,82 @@ full design reasoning; this is the summary.
   that the financial columns survived unchanged while identity/contact
   columns were overwritten and `anonymized_at` was stamped.
 
+## Refunds (built 2026-09-11)
+
+A "Refund" link on each unrefunded row in `/admin/orders` refunds the
+full order through Stripe. **Full refunds only in v1**, no partial
+amounts. No `cancelled` status: a row only ever exists post-payment
+(see "Checkout / payments" above), so cancel and refund are the same
+act here.
+
+- Migration `0007_order_refunds.sql` widened `orders.status`'s CHECK
+  to add `'refunded'` and added `stripe_refund_id`, `refunded_at`,
+  `amount_refunded`.
+- **The bug this stage would otherwise have introduced**:
+  `updateOrderStatusAction` used to accept any `OrderStatus`, so simply
+  widening that union would have silently let the owner set `refunded`
+  from the plain status dropdown with no money moving. Guarded two
+  ways: `SettableOrderStatus` (`src/lib/db/orders.ts`) excludes
+  `refunded` at the type level, and `updateOrderStatusAction` itself
+  re-checks against an explicit allowlist at runtime, since a request
+  to that action isn't actually constrained by what the dropdown's
+  `<option>`s happen to be.
+- `refundOrderAction` (`admin/orders/actions.ts`) calls
+  `stripe.refunds.create({ payment_intent })` **first**, then writes
+  the DB. If Stripe succeeds and the DB write then fails, the money
+  left and the row is stale, which is visible (the dashboard and
+  Stripe disagree) and recoverable via the webhook below; the reverse
+  order would show a refund that never happened and produce a
+  chargeback. Three layers of double-refund protection: the UI hides
+  the Refund control once `status === "refunded"`; the action re-reads
+  the order server-side via the pure `canRefund()` guard (the UI check
+  goes stale across two open tabs); and the Stripe idempotency key is
+  scoped to the order id and its exact charged amount, so two
+  concurrent clicks can't both succeed at Stripe. `canRefund()` also
+  rejects an order with no `stripe_payment_intent_id`, a genuinely
+  reachable case (the webhook only sets it from `session.payment_intent`,
+  which can be absent on an incompletely-processed session), not
+  defensive paranoia. Confirmed via a native `confirm()` dialog before
+  the request fires, matching the delete-confirmation convention
+  already used elsewhere in this admin (products/collections/media).
+- **Webhook**: listens for `refund.created`, `refund.updated` and
+  `refund.failed` (Stripe's October 2024 webhook update made these fire
+  uniformly for every refund type; before that, a synchronous card
+  refund only ever fired `charge.refunded`). This is what catches a
+  refund the owner issues directly from the **Stripe Dashboard**
+  instead of the in-app button; for a refund the in-app button already
+  issued, it's an idempotent confirmation, not the only place the
+  write happens (`order.stripe_refund_id === refund.id` short-circuits
+  a duplicate write). `refund.failed` is logged loudly for manual
+  reconciliation rather than auto-reverting the order's status: card
+  refunds (this shop's only real payment method today) complete
+  synchronously, so a failure arriving after the order was already
+  marked refunded would mean Stripe reversed its own earlier success,
+  exceptional enough that guessing at a revert isn't the safe default.
+  The test-mode webhook endpoint's subscribed events were updated to
+  include all three (done directly via the Stripe API with the
+  existing secret key, not the dashboard); **the live-mode webhook,
+  once registered, will need the same three events added** (see the
+  launch-blockers list above).
+- **Inventory on refund: prompt, never auto-relist.** A refund is
+  issued the moment the customer asks, often while the piece is still
+  in transit or already in their hands. `/admin/orders` shows "This
+  piece is marked Out of Stock. Relist it?" linking to the product's
+  admin edit page for a refunded order whose product is currently Out
+  of Stock, rather than ever flipping availability automatically.
+- `getRevenueByCurrency` now subtracts `amount_refunded` from
+  `amount_total`, so the dashboard's Revenue card is net of refunds;
+  `getOrderCountsByStatus` gained a `refunded` bucket, shown as its own
+  dashboard card.
+- Verified end-to-end against a real Stripe test-mode PaymentIntent
+  (created and confirmed directly via the API, not through the
+  checkout UI, since this only needed to test the refund path): issued
+  the refund through the real `/admin/orders` UI, confirmed Stripe
+  actually shows a succeeded refund object, confirmed the order row's
+  DB state (`status`, `amount_refunded`, `stripe_refund_id`,
+  `refunded_at`) exactly matches, and confirmed the dashboard's Revenue
+  card correctly nets to zero for a single fully-refunded order.
+
 ## What's stubbed / explicitly NOT built yet
 
 - Analytics/conversion tracking, abandoned-cart email, wishlist persistence
@@ -503,7 +579,10 @@ than deleted, so the audit trail stays intact.
   checkout page; not cosmetic, every customer sees this.
 - [ ] **Go live**: swap the test-mode `STRIPE_SECRET_KEY` for a real
   one once the branding above is fixed, and register a second,
-  live-mode webhook (the current one only covers test mode).
+  live-mode webhook (the current one only covers test mode) subscribed
+  to `checkout.session.completed`, `refund.created`, `refund.updated`
+  and `refund.failed` (all four; see "Refunds" below for why the last
+  three exist).
 - [x] Rotate `ADMIN_TOKEN` off its placeholder value (done 2026-09-11,
   locally in `.env.local` and on Vercel; also cut the login cookie's
   lifetime from 30 days to 7).
@@ -530,8 +609,10 @@ than deleted, so the audit trail stays intact.
 
 ### 🟡 Real gaps for "strong backend"
 
-- [ ] No refund/cancel flow in `/admin/orders`: refunds require going
-  into the Stripe Dashboard directly. Planned as Stage 4.
+- [x] **No refund/cancel flow in `/admin/orders`** existed; refunds
+  required going into the Stripe Dashboard directly. Fixed 2026-09-11
+  (Stage 4): a "Refund" button on each order calls Stripe, then writes
+  the DB, full refunds only. See "Refunds" below.
 - [ ] No quantity/stock counts: only In Stock / Made to Order / Out of
   Stock. Fine for one-of-a-kind pieces, wrong for reproducible ones
   (e.g. Veg Ring) where a second sale today wouldn't auto-block.

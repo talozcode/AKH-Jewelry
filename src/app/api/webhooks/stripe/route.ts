@@ -1,5 +1,6 @@
 import { stripeClient } from "@/lib/stripe";
 import { getProductById, updateProduct } from "@/lib/products";
+import { getOrderByPaymentIntentId, refundOrder } from "@/lib/db/orders";
 import { supabaseAdmin } from "@/lib/supabase/server";
 import type Stripe from "stripe";
 
@@ -44,7 +45,54 @@ export async function POST(req: Request) {
     }
   }
 
+  // Since Stripe's October 2024 webhook update, refund.created/updated/
+  // failed fire uniformly for every refund type (previously a synchronous
+  // card refund only ever fired charge.refunded). Listening to all three
+  // here, not just charge.refunded, is what makes this catch refunds
+  // issued directly from the Stripe Dashboard - refundOrderAction (the
+  // in-app refund button) already writes the DB itself, so for THAT path
+  // this is a no-op confirmation, not the only place the write happens.
+  if (event.type === "refund.created" || event.type === "refund.updated" || event.type === "refund.failed") {
+    const refund = event.data.object as Stripe.Refund;
+    try {
+      await handleRefundEvent(event.type, refund);
+    } catch (err) {
+      console.error(`stripe webhook: ${event.type} handling failed`, err);
+    }
+  }
+
   return new Response("ok", { status: 200 });
+}
+
+async function handleRefundEvent(eventType: string, refund: Stripe.Refund) {
+  const paymentIntentId = typeof refund.payment_intent === "string" ? refund.payment_intent : refund.payment_intent?.id;
+  if (!paymentIntentId) {
+    console.error("stripe webhook: refund event has no payment_intent", refund.id);
+    return;
+  }
+
+  const order = await getOrderByPaymentIntentId(paymentIntentId);
+  if (!order) {
+    // A refund on a charge this app doesn't know about (e.g. a test refund
+    // on an unrelated PaymentIntent). Not an error.
+    return;
+  }
+
+  if (eventType === "refund.failed") {
+    // Card refunds (this shop's only real payment method today) complete
+    // synchronously, so refundOrderAction never marks an order refunded
+    // before Stripe confirms success - a failure reaching this order after
+    // that would mean Stripe reversed its own earlier success, which is
+    // exceptional enough to just log loudly for manual reconciliation
+    // rather than guess at reverting the order's status automatically.
+    console.error("stripe webhook: refund FAILED for an order already believed refunded", order.id, refund.id);
+    return;
+  }
+
+  if (refund.status !== "succeeded") return; // not final yet (e.g. a pending bank-transfer refund)
+  if (order.stripe_refund_id === refund.id) return; // already recorded, idempotent no-op
+
+  await refundOrder(order.id, { stripeRefundId: refund.id, amountRefunded: refund.amount });
 }
 
 async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
