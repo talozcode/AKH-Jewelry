@@ -35,6 +35,7 @@ export type Database = {
           is_hero: boolean;
           is_published: boolean;
           sort_order: number;
+          stock_quantity: number | null;
           created_at: string;
           updated_at: string;
         };
@@ -138,6 +139,7 @@ export type Database = {
           stripe_refund_id: string | null;
           refunded_at: string | null;
           amount_refunded: number;
+          oversold: boolean;
           anonymized_at: string | null;
           created_at: string;
           updated_at: string;
@@ -185,6 +187,16 @@ export type Database = {
       };
     };
     Views: Record<string, never>;
-    Functions: Record<string, never>;
+    Functions: {
+      // Atomic per-unit decrement for tracked inventory. See
+      // supabase/migrations/0008_product_stock.sql for the SQL and the
+      // concurrency-race reasoning. Returns the new quantity, or null if
+      // the product isn't tracked (stock_quantity is null) or was already
+      // at 0 (an oversell the caller must handle, never throw on).
+      decrement_product_stock: {
+        Args: { p_product_id: string };
+        Returns: number | null;
+      };
+    };
   };
 };

@@ -16,6 +16,14 @@ export type Product = {
   weight?: string;
   availableSizes?: string[];
   availability: Availability;
+  /**
+   * Real tracked inventory count. null/undefined means "not tracked": an
+   * "In Stock" one-of-one still flips straight to Out of Stock on sale,
+   * and "Made to Order" stays unbounded, exactly as before this field
+   * existed. Only meaningful when availability is "In Stock"; the admin
+   * form clears it when switching a product away from "In Stock".
+   */
+  stockQuantity?: number | null;
   dispatch: string;
   limitedEdition?: string;
   /** Real photography pulled from the live site, largest usable crop first. */

@@ -44,6 +44,11 @@ export function OrderRow({ order, productOutOfStock }: { order: Order; productOu
           {(order.amount_total / 100).toLocaleString()}
           {order.amount_refunded > 0 ? <span className="text-red-600"> (refunded)</span> : null}
         </div>
+        {order.oversold ? (
+          <span className="mt-1 inline-block rounded-full bg-red-100 px-2 py-0.5 text-[11px] font-medium text-red-700">
+            Oversold: tracked stock hit 0 after this paid
+          </span>
+        ) : null}
       </td>
       <td className="py-3 pr-3">
         <div className="text-slate-900">{order.customer_name}</div>

@@ -1,6 +1,6 @@
 import { stripeClient } from "@/lib/stripe";
-import { getProductById, updateProduct } from "@/lib/products";
-import { getOrderByPaymentIntentId, refundOrder } from "@/lib/db/orders";
+import { decideInventoryEffect, getProductById, setProductAvailability } from "@/lib/products";
+import { getOrderByPaymentIntentId, markOrderOversold, refundOrder } from "@/lib/db/orders";
 import { supabaseAdmin } from "@/lib/supabase/server";
 import type Stripe from "stripe";
 
@@ -115,7 +115,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   const customerEmail = session.customer_details?.email ?? "";
   const shipping = session.collected_information?.shipping_details;
 
-  const { error } = await supabaseAdmin()
+  const { data: insertedOrder, error } = await supabaseAdmin()
     .from("orders")
     .insert({
       product_id: product.id,
@@ -136,7 +136,9 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
       stripe_payment_intent_id: typeof session.payment_intent === "string" ? session.payment_intent : null,
       amount_total: session.amount_total ?? 0,
       currency: (session.currency ?? product.currency).toUpperCase(),
-    });
+    })
+    .select("id")
+    .single();
 
   if (error) {
     if (error.code === "23505") {
@@ -147,10 +149,33 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     throw new Error(`orders insert failed: ${error.message}`);
   }
 
-  // Decision: flip In Stock one-of-ones to Out of Stock the instant
-  // payment confirms, so the same physical piece can't be sold twice.
-  // Made to Order is untouched (no fixed inventory to protect).
-  if (product.availability === "In Stock") {
-    await updateProduct(product.id!, { ...product, availability: "Out of Stock" });
+  // See decideInventoryEffect's own doc comment for the full truth table.
+  const effect = decideInventoryEffect(product);
+
+  if (effect === "flip_to_out_of_stock") {
+    // Untracked one-of-one: flip the instant payment confirms, so the same
+    // physical piece can't be sold twice. setProductAvailability (not
+    // updateProduct(id, {...product, availability})) so a concurrent admin
+    // edit to this product isn't silently clobbered by a stale full-row
+    // write.
+    await setProductAvailability(product.id!, "Out of Stock");
+  } else if (effect === "decrement") {
+    // Tracked inventory: atomic per-unit decrement, not a read-then-write,
+    // so two concurrent payments for the last unit can't both succeed (see
+    // the migration's own comment for the concurrency argument in full).
+    const { data: newQty, error: rpcError } = await supabaseAdmin().rpc("decrement_product_stock", {
+      p_product_id: product.id!,
+    });
+    if (rpcError) throw new Error(`decrement_product_stock failed: ${rpcError.message}`);
+
+    if (newQty === null) {
+      // The customer already paid by the time this runs, so this must
+      // never throw: log loudly and flag it for the owner on
+      // /admin/orders rather than pretend nothing went wrong.
+      console.error("stripe webhook: OVERSOLD", product.id, session.id);
+      await markOrderOversold(insertedOrder.id);
+    } else if (newQty === 0) {
+      await setProductAvailability(product.id!, "Out of Stock");
+    }
   }
 }

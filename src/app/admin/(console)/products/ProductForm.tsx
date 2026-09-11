@@ -21,6 +21,7 @@ const EMPTY: Omit<Product, "id"> = {
   weight: "",
   availableSizes: [],
   availability: "In Stock",
+  stockQuantity: null,
   dispatch: "",
   limitedEdition: "",
   images: [],
@@ -152,7 +153,13 @@ export function ProductForm({ product }: { product?: Product }) {
           <select
             className={inputClass}
             value={form.availability}
-            onChange={(e) => set("availability", e.target.value as Availability)}
+            onChange={(e) => {
+              const availability = e.target.value as Availability;
+              set("availability", availability);
+              // Not tracked unless In Stock - clear it so switching away
+              // never leaves a stale count sitting unused underneath.
+              if (availability !== "In Stock") set("stockQuantity", null);
+            }}
           >
             {AVAILABILITIES.map((a) => (
               <option key={a} value={a}>
@@ -161,6 +168,19 @@ export function ProductForm({ product }: { product?: Product }) {
             ))}
           </select>
         )}
+        {form.availability === "In Stock"
+          ? field(
+              "Stock quantity (optional)",
+              <input
+                type="number"
+                min={0}
+                className={inputClass}
+                value={form.stockQuantity ?? ""}
+                onChange={(e) => set("stockQuantity", e.target.value === "" ? null : Number(e.target.value))}
+              />,
+              "Leave blank for a one-of-one piece (flips straight to Out of Stock when sold). Set a number to track a real count."
+            )
+          : null}
         {field(
           "Price",
           <input

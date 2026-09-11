@@ -533,6 +533,69 @@ act here.
   `refunded_at`) exactly matches, and confirmed the dashboard's Revenue
   card correctly nets to zero for a single fully-refunded order.
 
+## Real stock quantity (built 2026-09-11)
+
+`products.stock_quantity` is nullable and optional: null means "not
+quantity tracked", which is unchanged, existing behavior and needed no
+backfill for the 15 seeded products.
+
+| availability | stock_quantity | meaning |
+|---|---|---|
+| In Stock | null | one of one; flips to Out of Stock on sale (unchanged) |
+| In Stock | N > 0 | N units; decrements per sale, flips at 0 |
+| Made to Order | (any) | unbounded, never flipped (unchanged) |
+
+The full decision is a pure, tested function,
+`decideInventoryEffect()` in `src/lib/products.ts` (`products.test.ts`
+covers the whole table), so the webhook handler itself is just "call
+the decided effect," not a place where this logic can drift.
+
+- **The oversell race is real, so this needed the codebase's first
+  Postgres function.** Two buyers can create Checkout Sessions for the
+  last unit concurrently and both pay, since Stripe imposes no
+  serialization between separate sessions. Decrementing at session
+  creation (instead of at payment) was rejected: `checkout.session.expired`
+  cleanup has up to a 24h default window, so one visitor who abandons
+  checkout would lock the last unit for up to a day, a worse and far
+  more frequent failure than a rare genuine double-sale. `supabase/
+  migrations/0008_product_stock.sql`'s `decrement_product_stock(p_product_id)`
+  does the decrement and the `WHERE stock_quantity > 0` check in one
+  atomic statement; under READ COMMITTED, a second concurrent call
+  blocks on the row lock, then re-evaluates its WHERE against the
+  now-updated row and matches zero rows. That row-level lock is the
+  entire race fix. Calling it requires a hand-edit to `database.types.ts`'s
+  `Functions` block (previously `Record<string, never>`).
+- When the decrement returns null on a tracked product (already at 0),
+  the customer has already paid, so the webhook must **never throw**:
+  it logs loudly and sets `orders.oversold = true`, shown as a red flag
+  on that row in `/admin/orders`, so the owner learns about it from the
+  dashboard rather than from the customer.
+- Replaced the webhook's old `updateProduct(id, {...product, availability})`
+  with a narrow `setProductAvailability(id, availability)`
+  (`src/lib/products.ts`). The old call wrote every column from a
+  `product` read moments earlier, so a concurrent admin edit to that
+  same product between the read and the write got silently clobbered:
+  a pre-existing lost-update bug, fixed here essentially for free.
+- `/admin/products` gets a "Stock quantity (optional)" field, shown
+  only when Availability is "In Stock" and cleared automatically when
+  switching away from it, so a stale tracked count never sits unused
+  underneath a Made to Order or Out of Stock product.
+- Storefront shows "Last one" at `stock_quantity === 1` and nothing for
+  higher counts (`ProductCard.tsx`): a running count reads like fast
+  fashion, against the locked design brief's restraint.
+- **Verified end-to-end against real concurrency, not just sequentially**:
+  created a throwaway In Stock product with `stock_quantity = 1`, then
+  fired two genuinely concurrent fake `checkout.session.completed`
+  webhook deliveries at a local dev server (signed with
+  `Stripe.webhooks.generateTestHeaderString`, no real Checkout Session
+  needed since only the decrement path was under test) via
+  `Promise.all`. Confirmed exactly one order succeeded
+  (`oversold = false`), the other was correctly flagged
+  (`oversold = true`), `stock_quantity` landed at exactly 0 (never
+  negative), and the product flipped to Out of Stock. Also verified the
+  admin form's Stock quantity field and the storefront's "Last one"
+  badge live in a real browser.
+
 ## What's stubbed / explicitly NOT built yet
 
 - Analytics/conversion tracking, abandoned-cart email, wishlist persistence
@@ -613,10 +676,12 @@ than deleted, so the audit trail stays intact.
   required going into the Stripe Dashboard directly. Fixed 2026-09-11
   (Stage 4): a "Refund" button on each order calls Stripe, then writes
   the DB, full refunds only. See "Refunds" below.
-- [ ] No quantity/stock counts: only In Stock / Made to Order / Out of
-  Stock. Fine for one-of-a-kind pieces, wrong for reproducible ones
-  (e.g. Veg Ring) where a second sale today wouldn't auto-block.
-  Planned as Stage 5.
+- [x] **No quantity/stock counts** existed; only In Stock / Made to
+  Order / Out of Stock, which was fine for one-of-a-kind pieces but
+  wrong for reproducible ones (e.g. Veg Ring), where a second sale
+  wouldn't auto-block. Fixed 2026-09-11 (Stage 5): an optional real
+  `stock_quantity` per product, atomically decremented at payment. See
+  "Real stock quantity" below.
 - [ ] No customer accounts: guest checkout only, no order-history login.
 - [x] **No data-rights tooling for GDPR/CCPA/Israeli PPL requests**
   existed. Fixed 2026-09-11 (Stage 3): `/admin/privacy` ("Data

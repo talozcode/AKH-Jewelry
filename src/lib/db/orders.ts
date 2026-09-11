@@ -60,6 +60,16 @@ export async function getRevenueByCurrency(): Promise<Record<string, number>> {
   return totals;
 }
 
+/**
+ * Flags an order whose tracked-inventory decrement returned null: the
+ * customer already paid by the time this runs, so the webhook must never
+ * throw here, only record it for the owner to see on `/admin/orders`.
+ */
+export async function markOrderOversold(id: string): Promise<void> {
+  const { error } = await supabaseAdmin().from("orders").update({ oversold: true }).eq("id", id);
+  if (error) throw new Error(`markOrderOversold: ${error.message}`);
+}
+
 /** Admin only - call `requireAdminAction()` before this. */
 export async function updateOrderStatus(id: string, status: SettableOrderStatus): Promise<void> {
   const { error } = await supabaseAdmin().from("orders").update({ status }).eq("id", id);

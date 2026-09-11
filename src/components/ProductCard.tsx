@@ -27,6 +27,13 @@ export function ProductCard({ product }: { product: Product }) {
             <span className="absolute left-3 top-3 border border-ivory/70 bg-ink/40 px-2 py-1 text-[10px] text-ivory backdrop-blur-sm">
               {product.availability}
             </span>
+          ) : product.stockQuantity === 1 ? (
+            // Only at exactly 1, nothing for higher counts: a running
+            // count reads like fast fashion, against the locked design
+            // brief's restraint.
+            <span className="absolute left-3 top-3 border border-ivory/70 bg-ink/40 px-2 py-1 text-[10px] text-ivory backdrop-blur-sm">
+              Last one
+            </span>
           ) : null}
           {product.limitedEdition ? (
             <span className="absolute left-3 bottom-3 border border-ivory/70 bg-ink/40 px-2 py-1 text-[10px] text-ivory backdrop-blur-sm">

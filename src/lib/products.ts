@@ -19,6 +19,7 @@ function rowToProduct(row: Row): Product {
     weight: row.weight ?? undefined,
     availableSizes: row.available_sizes ?? undefined,
     availability: row.availability,
+    stockQuantity: row.stock_quantity,
     dispatch: row.dispatch,
     limitedEdition: row.limited_edition ?? undefined,
     images: row.images,
@@ -121,6 +122,10 @@ function productToRow(product: ProductInput) {
     weight: product.weight ?? null,
     available_sizes: product.availableSizes ?? null,
     availability: product.availability,
+    // Not tracked unless availability is "In Stock" - forced to null
+    // otherwise so switching a product to Made to Order/Out of Stock can't
+    // leave a stale tracked count sitting unused underneath it.
+    stock_quantity: product.availability === "In Stock" ? (product.stockQuantity ?? null) : null,
     dispatch: product.dispatch,
     limited_edition: product.limitedEdition ?? null,
     images: product.images,
@@ -158,4 +163,44 @@ export async function updateProduct(id: string, product: ProductInput): Promise<
 export async function deleteProduct(id: string): Promise<void> {
   const { error } = await supabaseAdmin().from("products").delete().eq("id", id);
   if (error) throw new Error(`deleteProduct: ${error.message}`);
+}
+
+/**
+ * A narrow single-column update, deliberately NOT `updateProduct(id,
+ * {...product, availability})`. That pattern writes every column from a
+ * `product` read moments earlier, so a concurrent admin edit to the same
+ * row (made between that read and this write) gets silently clobbered - a
+ * pre-existing lost-update bug in the webhook's own availability flip,
+ * fixed here by only ever touching the one column it actually means to
+ * change.
+ */
+export async function setProductAvailability(id: string, availability: Product["availability"]): Promise<void> {
+  const { error } = await supabaseAdmin().from("products").update({ availability }).eq("id", id);
+  if (error) throw new Error(`setProductAvailability: ${error.message}`);
+}
+
+/**
+ * Pure decision table for what a paid order should do to a product's
+ * inventory, extracted so the whole matrix is one thing to read and test
+ * (products.test.ts) rather than inline branches in the webhook handler:
+ *
+ * | availability   | stockQuantity | effect                 |
+ * |----------------|---------------|------------------------|
+ * | In Stock       | null          | flip to Out of Stock   |
+ * | In Stock       | N > 0         | decrement              |
+ * | Made to Order  | (any)         | none: unbounded, never flipped |
+ * | Out of Stock   | (any)         | none: already reflects reality |
+ *
+ * "decrement" doesn't say what the new quantity turned out to be - that's
+ * only knowable after the atomic RPC call actually runs (see
+ * decrement_product_stock in supabase/migrations/0008_product_stock.sql),
+ * which is why this stays a pure decision of WHETHER to call it, not a
+ * prediction of its result.
+ */
+export type InventoryEffect = "none" | "flip_to_out_of_stock" | "decrement";
+
+export function decideInventoryEffect(product: Pick<Product, "availability" | "stockQuantity">): InventoryEffect {
+  if (product.availability !== "In Stock") return "none";
+  if (product.stockQuantity === null || product.stockQuantity === undefined) return "flip_to_out_of_stock";
+  return "decrement";
 }
