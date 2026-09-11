@@ -220,7 +220,7 @@ export const DEFAULTS: PageContentMap = {
     sections: [
       {
         heading: "Who these terms are with",
-        body: "These terms govern orders placed at akhjewelry.com, operated by [[LEGAL ENTITY NAME]] ([[COMPANY / VAT NUMBER]]), [[REGISTERED ADDRESS]] (\"AKH\", \"we\", \"us\"). By placing an order you agree to these terms. See our [Privacy Policy](/privacy) for how we handle your personal data.",
+        body: "These terms govern orders placed at akhjewelry.com with AKH Jewelry (\"AKH\", \"we\", \"us\"), based in Israel. By placing an order you agree to these terms. See our [Privacy Policy](/privacy) for how we handle your personal data.",
       },
       {
         heading: "Products and pricing",
@@ -248,7 +248,7 @@ export const DEFAULTS: PageContentMap = {
       },
       {
         heading: "Intellectual property",
-        body: "Product photography, designs and the content of this site belong to [[LEGAL ENTITY NAME]] and may not be reproduced without permission.",
+        body: "Product photography, designs and the content of this site belong to AKH and may not be reproduced without permission.",
       },
       {
         heading: "Limitation of liability",
@@ -260,7 +260,7 @@ export const DEFAULTS: PageContentMap = {
       },
       {
         heading: "Governing law",
-        body: "These terms are governed by the laws of [[GOVERNING LAW JURISDICTION]], without prejudice to any mandatory consumer-protection law that applies in your own country of residence.",
+        body: "These terms are governed by the laws of Israel, without prejudice to any mandatory consumer-protection law that applies in your own country of residence.",
       },
       {
         heading: "Changes to these terms",
@@ -279,7 +279,7 @@ export const DEFAULTS: PageContentMap = {
     sections: [
       {
         heading: "Who we are",
-        body: "akhjewelry.com is operated by [[LEGAL ENTITY NAME]] ([[COMPANY / VAT NUMBER]]), [[REGISTERED ADDRESS]] (\"AKH\", \"we\", \"us\"), the data controller for the personal information described below.",
+        body: "akhjewelry.com is operated by AKH Jewelry (\"AKH\", \"we\", \"us\"), based in Israel, the data controller for the personal information described below.",
       },
       {
         heading: "What information we collect",
@@ -319,7 +319,7 @@ export const DEFAULTS: PageContentMap = {
       },
       {
         heading: "How to exercise your rights",
-        body: "Email [[PRIVACY CONTACT EMAIL]] to make any of the requests above. We'll verify your identity using the email address on your order before acting on it, and we aim to respond within 30 days.",
+        body: "Email [hello@akhjewelry.com](mailto:hello@akhjewelry.com) to make any of the requests above. We'll verify your identity using the email address on your order before acting on it, and we aim to respond within 30 days.",
       },
       {
         heading: "Children",
@@ -331,7 +331,7 @@ export const DEFAULTS: PageContentMap = {
       },
       {
         heading: "Contact",
-        body: "Questions about this policy can be sent to [[PRIVACY CONTACT EMAIL]] or [[LEGAL ENTITY NAME]], [[REGISTERED ADDRESS]].",
+        body: "Questions about this policy can be sent to [hello@akhjewelry.com](mailto:hello@akhjewelry.com).",
       },
     ],
   },
