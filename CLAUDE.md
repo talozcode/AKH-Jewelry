@@ -816,3 +816,50 @@ Applies to code, comments, copy, docs and commit messages, no exceptions.
 `npm run no-dashes` checks `src/`, `scripts/`, `supabase/` and this file
 and exits non-zero on any hit (see `scripts/no-dashes.sh`). Run it before
 committing; CI does not enforce this yet.
+
+## Launch checklist: what only the site owner can do
+
+Everything above this point can be (and was) built without the real
+business behind AKH. These items can't: they need a decision or a
+credential that only the owner has, not more engineering. Go live only
+after all of these are done, not just the launch-blockers above them.
+
+- [ ] **Fill every `[[PLACEHOLDER]]`** in `/terms` and `/privacy`:
+  legal entity name, registered address, company/VAT number, governing
+  law jurisdiction, and a privacy contact email. `/admin/pages` shows a
+  red pill on both rows until every one is gone.
+- [ ] **Get the made-to-order return question legally reviewed.** The
+  Terms page itself carries an inline `[[LEGAL REVIEW: ...]]` note on
+  whether a standard-size Made to Order catalog piece qualifies for the
+  same final-sale treatment as a true bespoke commission under the EU
+  Consumer Rights Directive. This is a real compliance question, not a
+  copy placeholder, and needs an actual answer from a lawyer in the
+  operating jurisdiction before EU customers can be sold to safely.
+- [ ] **Appoint an EU representative** if selling to EU/EEA customers
+  (GDPR Art. 27): the current worldwide shipping policy was kept
+  deliberately, with this representative requirement flagged as a
+  pre-launch to-do rather than restricting shipping or silently
+  ignoring the requirement. Once appointed, replace the
+  `[[EU REPRESENTATIVE NAME AND CONTACT DETAILS]]` placeholder in
+  `/privacy`.
+- [ ] **Fix Stripe's connected-account branding**: it currently shows
+  "Dishboard" (a different project) as the merchant name at checkout,
+  confirmed via a real screenshot. Either create a dedicated Stripe
+  account for AKH or rename this account's public business name in
+  Stripe Dashboard &rarr; Settings &rarr; Business.
+- [ ] **Go live on Stripe**: after the branding fix above, swap
+  `STRIPE_SECRET_KEY` (`.env.local` and Vercel) for a real live-mode
+  key, and register a **second, live-mode webhook** endpoint (the
+  existing one only covers test mode) subscribed to all four events:
+  `checkout.session.completed`, `refund.created`, `refund.updated`,
+  `refund.failed`. Then update `STRIPE_WEBHOOK_SECRET` to match the new
+  endpoint's signing secret.
+- [ ] **Cut over the custom domain**: still on
+  `akh-jewelry.vercel.app`, not `akhjewelry.com`. Point the real domain
+  at this Vercel project once the owner is ready to retire the old Wix
+  site.
+- [ ] **Decide on the "temporary" Supabase project**: it was explicitly
+  marked temporary by the owner ("until I give you a new account") and
+  still holds the entire live catalog and order history. Moving it is
+  a re-provision plus a data/asset copy, not a code rewrite, but it
+  needs the owner to actually provide the permanent account.
