@@ -251,26 +251,38 @@ this section is the living reference. Schema in
 
 ## Images (important: read before touching image code)
 
-- **Product photos are real**, scraped from the live akhjewelry.com product pages
-  (2026-09-07). `src/lib/products.ts` stores each image as a bare Wix media id
-  (`"<32-hex-id>.<ext>"`, e.g. `"682d76e02811499b9d6b09bab93722ba.jpg"`).
-  `src/lib/wixImage.ts`'s `wixImg()` turns that into a resized
-  `static.wixstatic.com` URL. **All of akhjewelry.com's media lives under the
-  site prefix `4bc845_`**; `wixImg()` prepends it automatically. If you add a
-  new image id, store it WITHOUT the prefix (the helper adds it), and verify
-  the id resolves (`curl -o /dev/null -w '%{http_code}' <url>`) before trusting
-  it: a wrong/missing prefix silently 403s instead of 404ing.
+- **Product photos are real**, originally scraped from the live
+  akhjewelry.com product pages (2026-09-07). Live `products.images[]`
+  entries are now Supabase Storage URLs, re-hosted 2026-09-11 by
+  `scripts/migrate-legacy-images.ts` (see the backlog's "Not standalone"
+  section); `wixImg()`/`ProductImage.tsx` still pass any `http`-prefixed
+  string through unchanged, so this needed no component changes.
+  `src/lib/legacy-products-seed.ts` (frozen, no longer the live data
+  source) still stores each image as a bare Wix media id
+  (`"<32-hex-id>.<ext>"`, e.g. `"682d76e02811499b9d6b09bab93722ba.jpg"`)
+  for `design-concepts`'s sake; `src/lib/wixImage.ts`'s `wixImg()` turns
+  that into a resized `static.wixstatic.com` URL. **All of
+  akhjewelry.com's media lives under the site prefix `4bc845_`**;
+  `wixImg()` prepends it automatically. If you add a new image id, store
+  it WITHOUT the prefix (the helper adds it), and verify the id resolves
+  (`curl -o /dev/null -w '%{http_code}' <url>`) before trusting it: a
+  wrong/missing prefix silently 403s instead of 404ing.
 - Product images render via plain `<img>` (see `ProductImage.tsx`), not
   `next/image`; deliberate, so the browser (not the Vercel server) makes the
-  request. Wix's CDN 403s requests from some datacenter/cloud IPs; end users'
-  browsers are unaffected. Some real product photos are candid lifestyle
+  request. Some real product photos are candid lifestyle
   shots with warm cream/tan/blush backdrops (a ring on a flower, a pendant on
   skin), not white studio shots; account for that when reusing the same
   photo across differently-colored sections (color-grade with a CSS filter
   if needed, as `design-concepts`'s Concepts B/C/D do).
 - **Editorial/mood photography where no real AKH photo exists** uses curated
-  stock from Pexels; see `src/lib/stockImages.ts`. Free commercial license,
-  no attribution required. Never presented as a specific real person.
+  stock originally sourced from Pexels (free commercial license, no
+  attribution required, never presented as a specific real person); see
+  `src/lib/stockImages.ts`. The two photos actually used live
+  (`home`/`story`'s shared hero shot, `bespoke`'s) are now re-hosted in
+  Supabase Storage too, registered in `media_assets` so they show up in
+  `/admin/media`; `STOCK` in `stockImages.ts` still points at the
+  original Pexels URLs and is only the migration script's source, not
+  something pages read from directly (pages read their own `pages` row).
 - The user has real photos of AKH's actual packaging (olive satin pouch,
   taupe box, blush/kraft bag, brass ribbon, handwritten wordmark) and the
   real Instagram bio/style (soft, minimalist, lifestyle; see prior git
@@ -431,12 +443,17 @@ than deleted, so the audit trail stays intact.
 
 ### 🟢 "Not standalone" specifically
 
-- [ ] **Legacy product photos still hotlink to Wix's CDN**
-  (`static.wixstatic.com`) for the original 15 seeded products: if the
-  old Wix site ever goes down, those images break. New admin-uploaded
-  images are already self-hosted in Supabase Storage; the originals
-  aren't. Migrating these (plus the Pexels mood photography) into
-  Supabase Storage is Stage 1 of the launch readiness plan.
+- [x] **Legacy product photos hotlinked to Wix's CDN**
+  (`static.wixstatic.com`) for the original 15 seeded products. Fixed
+  2026-09-11 (Stage 1 of the launch readiness plan): `npm run
+  migrate:images` (`scripts/migrate-legacy-images.ts`) downloaded each
+  product's ORIGINAL Wix file (not the cropped `/v1/fill/...` display
+  URL, so no crop got baked in), re-hosted all 36 images plus the 2
+  Pexels mood photos (`home`/`story`'s shared hero shot and `bespoke`'s)
+  into Supabase Storage, and updated `products.images[]` and the
+  relevant `pages` rows. Verified: 0 rows left with a bare Wix id.
+  Re-running the script is safe; it skips any `images[]` entry that's
+  already a Storage URL.
 - [ ] Nav menu structure is hardcoded (`Header.tsx`'s `NAV`,
   `Footer.tsx`'s `COLUMNS`): can't add/rename/reorder nav links from
   `/admin` (a full nav editor was explicitly scoped out of the CMS
@@ -465,8 +482,8 @@ than deleted, so the audit trail stays intact.
 - [ ] Create the first real collection(s) through `/admin/collections`:
   the entity exists and is wired end-to-end but starts empty.
 - [ ] Replace Pexels mood photography with real AKH studio photography
-  once shot (Stage 1 moves the Pexels images into Supabase Storage but
-  doesn't replace them).
+  once shot (Stage 1 re-hosted the Pexels images into Supabase Storage,
+  see above, but didn't replace them with real studio shots).
 - [ ] Extend the locked button/type system from the homepage to
   shop/product/policy pages (currently only the homepage and the
   shared `PurchaseArea` component use the new primary/secondary button

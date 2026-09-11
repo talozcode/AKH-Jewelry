@@ -12,7 +12,8 @@
     "test:watch": "vitest",
     "no-dashes": "bash scripts/no-dashes.sh",
     "seed": "dotenv -e .env.local -- tsx scripts/seed-products.ts",
-    "seed:pages": "dotenv -e .env.local -- tsx scripts/seed-pages.ts"
+    "seed:pages": "dotenv -e .env.local -- tsx scripts/seed-pages.ts",
+    "migrate:images": "dotenv -e .env.local -- tsx scripts/migrate-legacy-images.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.109.0",
