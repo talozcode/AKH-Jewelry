@@ -32,7 +32,7 @@ export function SimpleListForm({ content: initial }: { content: SimpleListConten
           {content.rules.map((rule, i) => (
             <div key={i} className="flex gap-2">
               <input className={inputClass + " mt-0"} value={rule} onChange={(e) => updateRule(i, e.target.value)} />
-              <button type="button" onClick={() => removeRule(i)} className="px-2 text-xs text-[var(--admin-text-muted)] hover:text-[var(--admin-danger)]">
+              <button type="button" onClick={() => removeRule(i)} className="px-2 py-2 text-xs text-[var(--admin-text-muted)] hover:text-[var(--admin-danger)]">
                 Remove
               </button>
             </div>

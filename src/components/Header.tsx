@@ -51,12 +51,12 @@ export function Header() {
           <button aria-label="Account" className="hidden text-ink/70 transition hover:text-copper sm:block">
             <UserIcon />
           </button>
-          <Link href="/cart" aria-label="Cart" className="relative text-ink/70 transition hover:text-copper">
+          <Link href="/cart" aria-label="Cart" className="relative -m-2 p-2 text-ink/70 transition hover:text-copper">
             <BagIcon />
           </Link>
           <button
             aria-label="Open menu"
-            className="text-ink/80 md:hidden"
+            className="-m-2 p-2 text-ink/80 md:hidden"
             onClick={() => setOpen((v) => !v)}
           >
             <MenuIcon open={open} />

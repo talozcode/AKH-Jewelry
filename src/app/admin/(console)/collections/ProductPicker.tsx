@@ -44,13 +44,13 @@ export function ProductPicker({
                 {!product ? <span className="ml-2 text-xs text-[var(--admin-danger)]">(missing)</span> : null}
               </span>
               <span className="flex items-center gap-3 text-xs text-[var(--admin-text-faint)]">
-                <button type="button" onClick={() => move(i, -1)} disabled={i === 0} className="disabled:opacity-30">
+                <button type="button" onClick={() => move(i, -1)} disabled={i === 0} className="p-1.5 disabled:opacity-30">
                   ↑
                 </button>
-                <button type="button" onClick={() => move(i, 1)} disabled={i === slugs.length - 1} className="disabled:opacity-30">
+                <button type="button" onClick={() => move(i, 1)} disabled={i === slugs.length - 1} className="p-1.5 disabled:opacity-30">
                   ↓
                 </button>
-                <button type="button" onClick={() => remove(slug)} className="hover:text-[var(--admin-danger)]">
+                <button type="button" onClick={() => remove(slug)} className="p-1.5 hover:text-[var(--admin-danger)]">
                   Remove
                 </button>
               </span>

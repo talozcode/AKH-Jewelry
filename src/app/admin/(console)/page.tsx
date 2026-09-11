@@ -12,7 +12,7 @@ function Card({ label, value, sub, accent }: { label: string; value: string | nu
       <div className="h-1" style={{ backgroundColor: accent }} />
       <div className="p-5">
         <p className="text-xs font-medium uppercase tracking-wide text-[var(--admin-text-muted)]">{label}</p>
-        <p className="mt-2 text-3xl font-semibold text-[var(--admin-text)]">{value}</p>
+        <p className="mt-2 truncate text-xl font-semibold text-[var(--admin-text)] sm:text-3xl">{value}</p>
         {sub ? <p className="mt-1 text-xs text-[var(--admin-text-faint)]">{sub}</p> : null}
       </div>
     </div>

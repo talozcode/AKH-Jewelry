@@ -38,7 +38,7 @@ export function PurchaseArea({ product, contactEmail = "hello@akhjewelry.com" }:
               <button
                 key={s}
                 onClick={() => setSize(s)}
-                className={`min-w-11 border px-3 py-2 text-sm transition ${
+                className={`min-w-11 border px-3 py-2.5 text-sm transition ${
                   size === s ? "border-charcoal bg-charcoal text-ivory" : "border-ink/25 hover:border-ink"
                 }`}
               >
@@ -79,7 +79,10 @@ export function PurchaseArea({ product, contactEmail = "hello@akhjewelry.com" }:
 
 export function StickyMobileBar({ product }: { product: Product }) {
   return (
-    <div className="fixed inset-x-0 bottom-0 z-40 flex items-center justify-between gap-4 border-t border-ink/10 bg-ivory/95 px-4 py-3 backdrop-blur md:hidden">
+    <div
+      className="fixed inset-x-0 bottom-0 z-40 flex items-center justify-between gap-4 border-t border-ink/10 bg-ivory/95 px-4 pt-3 backdrop-blur md:hidden"
+      style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
+    >
       <div>
         <p className="font-display text-sm">{product.name}</p>
         <p className="text-sm text-ink/70">{formatPrice(product)}</p>

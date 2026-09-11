@@ -49,9 +49,9 @@ export default async function ConsoleLayout({ children }: { children: React.Reac
       <Script id="admin-theme-init" strategy="beforeInteractive">
         {THEME_INIT_SCRIPT}
       </Script>
-      <div className="flex min-h-dvh bg-[var(--admin-bg)] font-sans text-[var(--admin-text)]">
+      <div className="flex min-h-dvh flex-col bg-[var(--admin-bg)] font-sans text-[var(--admin-text)] lg:flex-row">
         <Sidebar signOutAction={signOut} />
-        <main className="flex-1 overflow-x-hidden px-8 py-10 sm:px-10">
+        <main className="flex-1 overflow-x-hidden px-4 py-6 sm:px-6 lg:px-10 lg:py-10">
           <div className="mx-auto max-w-6xl">{children}</div>
         </main>
       </div>

@@ -143,7 +143,7 @@ export function CollectionForm({
         Published (visible on the live site)
       </label>
 
-      <div className="flex items-center justify-between border-t border-[var(--admin-border)] pt-6">
+      <div className="flex flex-col gap-4 border-t border-[var(--admin-border)] pt-6 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex gap-3">
           <button
             type="submit"

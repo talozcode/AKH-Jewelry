@@ -111,7 +111,7 @@ export function ProductForm({ product }: { product?: Product }) {
     <form onSubmit={handleSubmit} className="max-w-3xl space-y-8">
       {error ? <p className="rounded-md border border-[var(--admin-danger-border)] bg-[var(--admin-danger-bg)] px-3 py-2 text-sm text-[var(--admin-danger)]">{error}</p> : null}
 
-      <section className="grid grid-cols-2 gap-4">
+      <section className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         {field(
           "Name",
           <input
@@ -265,7 +265,7 @@ export function ProductForm({ product }: { product?: Product }) {
         </label>
       </section>
 
-      <div className="flex items-center justify-between border-t border-[var(--admin-border)] pt-6">
+      <div className="flex flex-col gap-4 border-t border-[var(--admin-border)] pt-6 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex gap-3">
           <button
             type="submit"

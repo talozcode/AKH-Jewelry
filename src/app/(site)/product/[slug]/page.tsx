@@ -82,7 +82,11 @@ export default async function ProductPage(props: PageProps<"/product/[slug]">) {
       <div className="mx-auto grid max-w-7xl grid-cols-1 gap-12 px-4 py-8 sm:px-6 lg:grid-cols-2 lg:px-8">
         <Gallery product={product} />
 
-        <div id="purchase">
+        {/* scroll-mt-20: the sticky mobile "Buy Now" bar links here with
+            #purchase - without this, scrolling the anchor flush to the top
+            tucks it directly under the sticky header (h-16/64px), hiding
+            the name/price/size-selector the tap was meant to reveal. */}
+        <div id="purchase" className="scroll-mt-20">
           <h1 className="font-display text-3xl">{product.name}</h1>
           <p className="mt-1 font-display text-base italic text-mineral">{product.tagline}</p>
           <p className="mt-4 text-2xl text-ink">{formatPrice(product)}</p>

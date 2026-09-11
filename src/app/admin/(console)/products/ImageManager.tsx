@@ -48,11 +48,11 @@ export function ImageManager({
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={wixImg(img, 300, 375)} alt="" className="h-32 w-full rounded object-cover" />
             <div className="mt-1 flex items-center justify-between text-xs text-[var(--admin-text-muted)]">
-              <button type="button" onClick={() => move(i, -1)} disabled={i === 0} className="disabled:opacity-30">
+              <button type="button" onClick={() => move(i, -1)} disabled={i === 0} className="p-1.5 disabled:opacity-30">
                 ←
               </button>
               <span>{i + 1}</span>
-              <button type="button" onClick={() => move(i, 1)} disabled={i === images.length - 1} className="disabled:opacity-30">
+              <button type="button" onClick={() => move(i, 1)} disabled={i === images.length - 1} className="p-1.5 disabled:opacity-30">
                 →
               </button>
             </div>

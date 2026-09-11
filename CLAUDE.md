@@ -827,6 +827,71 @@ slate/white admin-dashboard look.
   hatch for exactly this pattern (the same one `next-themes` uses),
   not a blanket suppression.
 
+## Mobile responsiveness (audited and fixed 2026-09-11)
+
+Both the storefront and the admin console are now checked for mobile
+usability, not just "doesn't horizontally scroll." Done per explicit
+owner request ("make the website and dashboard mobile friendly. deploy
+agents to audit mobile view and verify"): 4 parallel read-only agents
+audited storefront core pages, storefront content/legal pages, admin
+tables/forms, and admin dashboard/page-forms/settings/login, each
+grepping for fixed-pixel widths, undersized tap targets, and desktop-only
+grid assumptions, then every real finding was fixed and live-verified at
+a 375x812 viewport with chrome-devtools.
+
+- **Admin had no mobile nav at all before this pass.** `Sidebar.tsx` was
+  a static, always-rendered 240px-wide column with no responsive
+  handling - below `lg` it ate most of a phone's screen. It's now a
+  hamburger-triggered off-canvas drawer below `lg` (`fixed` + a
+  `-translate-x-full`/`translate-x-0` toggle, a `bg-black/40` backdrop
+  that closes on tap, auto-closes on navigation via React's "adjust
+  state during render" pattern comparing `pathname` to a tracked
+  `prevPathname` rather than `useEffect`+`setState`, which would trip
+  `react-hooks/set-state-in-effect`) and the original always-visible
+  static sidebar at `lg` and above, unchanged.
+- **Sticky "Buy Now" bar on `/product/[slug]` scrolled its own target
+  under the sticky header.** `StickyMobileBar` links to `#purchase`;
+  without `scroll-mt-20` on that target, the anchor lands flush under
+  the 64px sticky `Header`, hiding the name/price/size-selector the tap
+  was meant to reveal. Also added `env(safe-area-inset-bottom)` padding
+  to the bar itself so it doesn't crowd the home-indicator area on
+  notched iPhones.
+- **Small tap targets** bumped to a real hit box across both surfaces:
+  `Header`'s cart/hamburger icons (`-m-2 p-2`), `ProductCard`'s wishlist
+  heart (`h-8 w-8` -> `h-10 w-10`), and every bare-text "Remove"/reorder
+  (`←`/`→`/`↑`/`↓`) button in the admin's repeating-block forms
+  (`ImageManager`, `ProductPicker`, `BespokeForm`, `FaqForm`,
+  `SectionsForm`, `SimpleListForm`, `SizeGuideForm`) - most had zero
+  vertical padding, making the tap area only as tall as the glyph.
+- **`SizeGuideForm`'s two-input row could clip off-screen**, not just
+  look cramped: two `w-full` text inputs as direct children of a `flex`
+  row (not a grid) hit the browser's intrinsic per-input minimum width
+  (~170-190px each) before `width:100%` can shrink them further, so at
+  375px the second input and the Remove button could render past the
+  visible edge with no scrollbar to reveal them (`overflow-x-hidden` on
+  `<main>` hides it entirely). Fixed with `flex-col sm:flex-row` plus
+  `min-w-0` on each input.
+- **Desktop-only 2-column grids** switched to `grid-cols-1 sm:grid-cols-2`
+  where content didn't fit: `ProductForm`'s 12-field grid (long hint
+  text was wrapping into 5+ lines in a ~139px column) and `HomeForm`'s
+  CTA-label pair.
+- **Form footer button rows** (`ProductForm`, `CollectionForm`: Save +
+  Cancel + a right-aligned Delete link) changed from a single `flex
+  justify-between` row (buttons could wrap mid-word at 375px) to
+  `flex-col ... sm:flex-row sm:justify-between`, so they stack cleanly
+  below `sm`.
+- **Dashboard revenue card** could silently clip its value (no visible
+  overflow indicator, since `Card` sets `overflow-hidden`) at the
+  2-column mobile width once real revenue figures exist. Value text
+  now `text-xl sm:text-3xl` with `truncate` as a safety net.
+- Confirmed already correct and left alone: every admin data table
+  (`products`, `collections`, `orders`) was already `overflow-x-auto`
+  wrapping a `min-w-[...]` table - the right pattern, scoped to this
+  session before the audit began; `ShopClient`'s mobile filter drawer;
+  `Header`'s mobile nav drawer; all storefront legal/content pages
+  (responsive padding and headline sizes were already in place from the
+  Stage 2 legal-pages work).
+
 ## What's stubbed / explicitly NOT built yet
 
 - Analytics/conversion tracking, abandoned-cart email, wishlist persistence

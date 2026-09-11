@@ -49,7 +49,7 @@ export function ProductCard({ product }: { product: Product }) {
           e.preventDefault();
           setWishlisted((v) => !v);
         }}
-        className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full bg-ivory/80 text-ink/70 backdrop-blur transition hover:text-copper"
+        className="absolute right-3 top-3 flex h-10 w-10 items-center justify-center rounded-full bg-ivory/80 text-ink/70 backdrop-blur transition hover:text-copper"
       >
         <HeartIcon filled={wishlisted} />
       </button>

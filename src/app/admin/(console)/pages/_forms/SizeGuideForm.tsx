@@ -30,15 +30,24 @@ export function SizeGuideForm({ content: initial }: { content: SizeGuideContent 
         <span className="block text-xs font-medium uppercase tracking-wide text-[var(--admin-text-muted)]">Size chart</span>
         <div className="mt-2 space-y-2">
           {content.sizes.map((size, i) => (
-            <div key={i} className="flex items-center gap-2">
-              <input className={inputClass + " mt-0"} placeholder="EU size" value={size.eu} onChange={(e) => updateSize(i, { eu: e.target.value })} />
+            <div key={i} className="flex flex-col gap-2 sm:flex-row sm:items-center">
               <input
-                className={inputClass + " mt-0"}
+                className={inputClass + " mt-0 min-w-0"}
+                placeholder="EU size"
+                value={size.eu}
+                onChange={(e) => updateSize(i, { eu: e.target.value })}
+              />
+              <input
+                className={inputClass + " mt-0 min-w-0"}
                 placeholder="Circumference"
                 value={size.circumference}
                 onChange={(e) => updateSize(i, { circumference: e.target.value })}
               />
-              <button type="button" onClick={() => removeSize(i)} className="px-2 text-xs text-[var(--admin-text-muted)] hover:text-[var(--admin-danger)]">
+              <button
+                type="button"
+                onClick={() => removeSize(i)}
+                className="self-start px-2 py-2 text-xs text-[var(--admin-text-muted)] hover:text-[var(--admin-danger)] sm:self-auto"
+              >
                 Remove
               </button>
             </div>

@@ -28,7 +28,7 @@ export function FaqForm({ content: initial }: { content: FaqContent }) {
         <div key={i} className="rounded-md border border-[var(--admin-border)] p-4">
           <div className="flex items-center justify-between">
             <span className="text-xs text-[var(--admin-text-faint)]">Question {i + 1}</span>
-            <button type="button" onClick={() => removeItem(i)} className="text-xs text-[var(--admin-text-muted)] hover:text-[var(--admin-danger)]">
+            <button type="button" onClick={() => removeItem(i)} className="px-2 py-2 text-xs text-[var(--admin-text-muted)] hover:text-[var(--admin-danger)]">
               Remove
             </button>
           </div>
