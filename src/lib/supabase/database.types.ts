@@ -135,6 +135,7 @@ export type Database = {
           amount_total: number;
           currency: string;
           status: "unfulfilled" | "shipped";
+          anonymized_at: string | null;
           created_at: string;
           updated_at: string;
         };

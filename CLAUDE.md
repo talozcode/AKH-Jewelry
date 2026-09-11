@@ -407,6 +407,56 @@ a lawyer's review in the operating jurisdiction before launch.**
   Privacy Policy promises (access/export/erase by email) don't exist
   yet; that's Stage 3 of the plan, tracked below.
 
+## Data requests: GDPR/CCPA/Israeli PPL tooling (built 2026-09-11)
+
+`/admin/privacy` ("Data requests" in the sidebar) is how the owner
+answers an access, export or erasure request. `orders` is currently the
+only table holding customer personal data (reservations, the other
+candidate, was deleted in Stage 0). See `src/lib/db/privacy.ts` for the
+full design reasoning; this is the summary.
+
+- **Look up**: finds every order tied to an email, anonymized or not.
+  Deliberately does NOT use Postgres ILIKE for the case-insensitive
+  match, even though this stage's migration
+  (`0006_order_privacy.sql`) added an index on `lower(customer_email)`
+  for exactly that: ILIKE treats `_` as a single-character wildcard,
+  and real emails commonly contain a literal underscore, which would
+  make an exact-lookup tool occasionally return a stranger's order too.
+  Fetches and compares case-insensitively in application code instead,
+  correct at this table's current size; verified against a real test
+  order at `jane_test@example.com` returning exactly 1 result, not more.
+- **Export**: downloads a structured JSON file (GDPR Art. 20 wants
+  machine-readable and portable; a flat CSV can't hold this shape).
+- **Erase**: anonymizes rather than deletes. Orders are financial
+  records with a real tax-retention obligation, and GDPR Art. 17(3)(b)
+  exempts processing required by a legal obligation from the right to
+  erasure. `buildAnonymizedOrderPatch()` overwrites customer name,
+  email and shipping address/city/state/postal code; it preserves
+  product, price, currency, size, Stripe IDs, amount, status,
+  **`shipping_country`** (kept for VAT/customs record-keeping, per the
+  Privacy Policy's retention section) and both timestamps. The erased
+  email is per-row unique and non-routable
+  (`erased+<id prefix>@akhjewelry.invalid`, RFC 2606's reserved
+  `.invalid` TLD). Behind a typed-confirmation input (retype the exact
+  email), not a bare `confirm()`, since this is irreversible and mutates
+  a financial record; checked again server-side in the action itself,
+  not just via the disabled button.
+- **Honest caveat, stated in the Privacy Policy itself**:
+  `stripe_payment_intent_id` still points at a Stripe record containing
+  the customer's name and email, so an anonymized order is
+  pseudonymized, not fully anonymous, for as long as Stripe retains its
+  own copy. Redacting that is a manual Stripe Dashboard step, not
+  something this tool does.
+- `buildAnonymizedOrderPatch` is a pure, exported function tested
+  against an explicit allowlist of the columns it touches
+  (`src/lib/db/privacy.test.ts`), so adding a new personal-data column
+  to `orders` later and forgetting to add it there fails that test by
+  default rather than shipping a silent compliance gap.
+- Verified end-to-end against a real throwaway order (not a fixture):
+  looked it up, exported it, erased it, and confirmed in the database
+  that the financial columns survived unchanged while identity/contact
+  columns were overwritten and `anonymized_at` was stamped.
+
 ## What's stubbed / explicitly NOT built yet
 
 - Analytics/conversion tracking, abandoned-cart email, wishlist persistence
@@ -487,8 +537,13 @@ than deleted, so the audit trail stays intact.
   (e.g. Veg Ring) where a second sale today wouldn't auto-block.
   Planned as Stage 5.
 - [ ] No customer accounts: guest checkout only, no order-history login.
-- [x] No data-rights tooling for GDPR/CCPA/Israeli PPL requests
-  (export/erase by email): planned as Stage 3; also not yet built.
+- [x] **No data-rights tooling for GDPR/CCPA/Israeli PPL requests**
+  existed. Fixed 2026-09-11 (Stage 3): `/admin/privacy` ("Data
+  requests") looks up every order for an email, exports it as JSON, and
+  erases it behind a typed-confirmation ("Data requests" section
+  below). Verified end-to-end against a real throwaway order, including
+  the underscore-in-email edge case the implementation is specifically
+  designed to get right (see below).
 - [ ] No error monitoring: decided to rely on Vercel's own logs instead
   of Sentry for now.
 - [ ] No automated tests: every regression this session was caught by
