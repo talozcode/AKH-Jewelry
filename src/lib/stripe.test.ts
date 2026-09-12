@@ -1,27 +1,31 @@
 import { describe, expect, it } from "vitest";
 import { looksLikeStripeSecretKey, looksLikeStripeWebhookSecret } from "./stripe";
 
-// Fixtures deliberately use only sk_test_/rk_test_-shaped values, never a
-// live-mode prefix followed by a long alphanumeric run - GitHub's push
-// protection flags that shape as a possible real Stripe key regardless of
-// whether it's fabricated. looksLikeStripeSecretKey()'s "test|live"
-// alternation is a one-word difference in the pattern itself, so exercising
-// "test" here covers it without needing a live-shaped fixture at all.
+// Every fixture is built at runtime (prefix + repeated character), never
+// written as a long contiguous literal in source - even a comment showing
+// an example of the shape being avoided would itself match the same
+// scanner. Stripe test API keys get validated against Stripe's own API
+// and cleared once confirmed fake, but a webhook signing secret has no
+// such live-check, so GitHub can't rule a format-matching one out and
+// alerts regardless of how obviously fabricated it is (a plain a-z/0-9
+// sequence in an earlier version of this file triggered a real alert).
+const fake = (prefix: string, length = 20) => prefix + "x".repeat(length);
+
 describe("looksLikeStripeSecretKey", () => {
   it("accepts a test-mode secret key", () => {
-    expect(looksLikeStripeSecretKey("sk_test_51NabcdEFGHijklMNOPqrstUVWXyz")).toBe(true);
+    expect(looksLikeStripeSecretKey(fake("sk_test_"))).toBe(true);
   });
 
   it("accepts a test-mode restricted key", () => {
-    expect(looksLikeStripeSecretKey("rk_test_51NabcdEFGHijklMNOPqrstUVWXyz")).toBe(true);
+    expect(looksLikeStripeSecretKey(fake("rk_test_"))).toBe(true);
   });
 
   it("rejects a publishable key (the common wrong-key paste)", () => {
-    expect(looksLikeStripeSecretKey("pk_test_51NabcdEFGHijklMNOPqrstUVWXyz")).toBe(false);
+    expect(looksLikeStripeSecretKey(fake("pk_test_"))).toBe(false);
   });
 
   it("rejects a webhook secret pasted into the wrong field", () => {
-    expect(looksLikeStripeSecretKey("whsec_abcdefghijklmnopqrstuvwxyz")).toBe(false);
+    expect(looksLikeStripeSecretKey(fake("whsec_"))).toBe(false);
   });
 
   it("rejects an empty or too-short value", () => {
@@ -30,17 +34,17 @@ describe("looksLikeStripeSecretKey", () => {
   });
 
   it("tolerates surrounding whitespace from a pasted value", () => {
-    expect(looksLikeStripeSecretKey("  sk_test_51NabcdEFGHijklMNOPqrstUVWXyz  ")).toBe(true);
+    expect(looksLikeStripeSecretKey(`  ${fake("sk_test_")}  `)).toBe(true);
   });
 });
 
 describe("looksLikeStripeWebhookSecret", () => {
   it("accepts a real-shaped webhook secret", () => {
-    expect(looksLikeStripeWebhookSecret("whsec_abcdefghijklmnopqrstuvwxyz0123456789")).toBe(true);
+    expect(looksLikeStripeWebhookSecret(fake("whsec_"))).toBe(true);
   });
 
   it("rejects a secret key pasted into the wrong field", () => {
-    expect(looksLikeStripeWebhookSecret("sk_test_51NabcdEFGHijklMNOPqrstUVWXyz")).toBe(false);
+    expect(looksLikeStripeWebhookSecret(fake("sk_test_"))).toBe(false);
   });
 
   it("rejects an empty or too-short value", () => {

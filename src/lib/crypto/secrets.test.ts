@@ -3,9 +3,13 @@ import { decryptSecret, encryptSecret, maskSecret } from "./secrets";
 
 // Fixtures use generic placeholder strings, not anything shaped like a real
 // Stripe key - this module encrypts/masks arbitrary strings, and a
-// realistic-looking live-mode key fixture (sk_live_/rk_live_ + a long
-// alphanumeric run) is exactly the shape GitHub's push protection flags as
-// a possible real secret, fabricated or not.
+// realistic-looking key/secret fixture is exactly the shape GitHub's
+// secret scanning flags as a possible real secret, fabricated or not (a
+// webhook-secret-shaped literal here got flagged even as a plain a-z
+// sequence, since Stripe webhook secrets have no live-check the way an API
+// key does). The two webhook-secret-shaped fixtures below are built at
+// runtime instead of written as a long contiguous literal.
+const fakeWebhookSecret = (length = 20) => `whsec_${"x".repeat(length)}`;
 const TEST_KEY = Buffer.alloc(32, 7).toString("base64"); // deterministic 32-byte key, test-only
 
 describe("encryptSecret / decryptSecret", () => {
@@ -25,7 +29,7 @@ describe("encryptSecret / decryptSecret", () => {
   });
 
   it("round-trips a webhook signing secret", () => {
-    const secret = "whsec_abcdefghijklmnopqrstuvwxyz0123456789";
+    const secret = fakeWebhookSecret();
     expect(decryptSecret(encryptSecret(secret))).toBe(secret);
   });
 
@@ -70,7 +74,7 @@ describe("maskSecret", () => {
   });
 
   it("keeps a recognizable prefix and suffix for a webhook secret", () => {
-    expect(maskSecret("whsec_abcdefghijklmnopqrstuvwxyz")).toBe("whsec_ab…wxyz");
+    expect(maskSecret(fakeWebhookSecret())).toBe("whsec_xx…xxxx");
   });
 
   it("never reveals the full value even for a very short input", () => {
