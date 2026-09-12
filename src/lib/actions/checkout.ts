@@ -27,7 +27,7 @@ export async function createCheckoutSession(
   const origin = `${protocol}://${host}`;
 
   try {
-    const stripe = stripeClient();
+    const stripe = await stripeClient();
     // Non-null: checkPurchasable's ok:true branch above already implies
     // product is defined (it's the first thing that function checks).
     const session = await stripe.checkout.sessions.create(buildCheckoutParams(product!, size, origin));

@@ -83,6 +83,12 @@ export type Database = {
           instagram_url: string | null;
           tiktok_url: string | null;
           footer_blurb: string;
+          stripe_secret_key_ciphertext: string | null;
+          stripe_secret_key_preview: string | null;
+          stripe_secret_key_updated_at: string | null;
+          stripe_webhook_secret_ciphertext: string | null;
+          stripe_webhook_secret_preview: string | null;
+          stripe_webhook_secret_updated_at: string | null;
           updated_at: string;
         };
         Insert: Partial<Database["public"]["Tables"]["site_settings"]["Row"]> &

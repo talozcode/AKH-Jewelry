@@ -22,7 +22,8 @@ export default async function OrderSuccessPage({
   let summary: { name: string; amount: number; currency: string; email: string | null } | null = null;
   if (session_id) {
     try {
-      const session = await stripeClient().checkout.sessions.retrieve(session_id, {
+      const stripe = await stripeClient();
+      const session = await stripe.checkout.sessions.retrieve(session_id, {
         expand: ["line_items"],
       });
       const item = session.line_items?.data[0];

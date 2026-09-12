@@ -53,7 +53,8 @@ export async function refundOrderAction(id: string): Promise<{ ok: true } | { ok
   if (!guard.ok) return { ok: false, error: guard.reason };
 
   try {
-    const refund = await stripeClient().refunds.create(
+    const stripe = await stripeClient();
+    const refund = await stripe.refunds.create(
       { payment_intent: order.stripe_payment_intent_id! },
       { idempotencyKey: `refund-${order.id}-${order.amount_total}` }
     );

@@ -1,4 +1,5 @@
 import { stripeClient } from "@/lib/stripe";
+import { resolveStripeWebhookSecret } from "@/lib/stripeSettings";
 import { decideInventoryEffect, getProductById, setProductAvailability } from "@/lib/products";
 import { getOrderByPaymentIntentId, isDuplicateSessionError, markOrderOversold, refundOrder, sessionToOrderRow } from "@/lib/db/orders";
 import { supabaseAdmin } from "@/lib/supabase/server";
@@ -10,12 +11,19 @@ import type Stripe from "stripe";
 
 export async function POST(req: Request) {
   const signature = req.headers.get("stripe-signature");
-  const secret = process.env.STRIPE_WEBHOOK_SECRET;
-  if (!signature || !secret) {
+  if (!signature) {
+    console.error("stripe webhook: missing signature header");
+    return new Response("Webhook not configured", { status: 400 });
+  }
+
+  // Checked before reading the body (cheap, no DB round-trip) so a request
+  // with no signature at all never even touches the credentials lookup.
+  const secret = await resolveStripeWebhookSecret();
+  if (!secret) {
     // Fails closed: a config problem, not a Stripe-retry-worthy transient
     // failure. 400 so it's visible in the Stripe Dashboard's webhook
     // attempt log rather than silently 200'ing forever.
-    console.error("stripe webhook: missing signature header or STRIPE_WEBHOOK_SECRET");
+    console.error("stripe webhook: no webhook secret configured (admin settings or STRIPE_WEBHOOK_SECRET)");
     return new Response("Webhook not configured", { status: 400 });
   }
 
@@ -25,7 +33,8 @@ export async function POST(req: Request) {
 
   let event: Stripe.Event;
   try {
-    event = stripeClient().webhooks.constructEvent(rawBody, signature, secret);
+    const stripe = await stripeClient();
+    event = stripe.webhooks.constructEvent(rawBody, signature, secret);
   } catch (err) {
     console.error("stripe webhook: signature verification failed", err);
     return new Response("Invalid signature", { status: 400 });

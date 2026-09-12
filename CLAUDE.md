@@ -957,6 +957,67 @@ read-only audit agents against the implementation.
   written from memory - the previous draft claimed "photo deletion always
   asks to confirm first" before `ImageManager`'s Remove actually did.
 
+## Owner-managed Stripe credentials (built 2026-09-12)
+
+Built for a genuine handover scenario: the owner asked how she'd ever
+control Stripe herself once the developer is "out of the picture." Before
+this, `STRIPE_SECRET_KEY`/`STRIPE_WEBHOOK_SECRET` were Vercel env vars on a
+project only the developer's account has access to - if she needed to
+rotate a compromised key or switch Stripe accounts after a full handover,
+she'd have no way to do it at all.
+
+- **`src/lib/crypto/secrets.ts`**: `encryptSecret`/`decryptSecret`
+  (AES-256-GCM, a fresh random IV per call, authenticated so a tampered
+  ciphertext throws instead of silently decrypting to garbage) and
+  `maskSecret` (a one-way "sk_live_5…wXyz" fingerprint, safe to redisplay,
+  never reversible). Keyed by `SETTINGS_ENCRYPTION_KEY` - a **static**
+  secret the developer sets once (via `openssl rand -base64 32`) and never
+  needs the owner to touch again, unlike the Stripe values themselves
+  which she genuinely needs to be able to rotate. All three functions are
+  pure and directly tested (`secrets.test.ts`), including a tamper test
+  that flips ciphertext bytes and asserts decryption throws.
+- **`src/lib/stripeSettings.ts`**: reads/writes two new nullable column
+  pairs on `site_settings` (migration `0010_stripe_settings.sql`) -
+  `stripe_secret_key_ciphertext`/`_preview`/`_updated_at` and the same
+  three for the webhook secret. Deliberately its own module, not folded
+  into `site-settings.ts`: that module's `SiteSettings` type is read by
+  public storefront pages (Footer, `/contact`) and should never carry
+  anything security-sensitive near it, even indirectly.
+  `resolveStripeSecretKey()`/`resolveStripeWebhookSecret()` (used only by
+  `stripeClient()` and the webhook route) prefer whatever the owner has
+  set over the developer's env var, so setting a key in the admin takes
+  effect immediately with no redeploy. `getStripeCredentialsStatus()`
+  (admin UI only) never returns a real secret, only the masked preview.
+- **`stripeClient()` is now async** (`src/lib/stripe.ts`) since resolving
+  the key can mean a database read - every call site
+  (`checkout.ts`, `order/success/page.tsx`, `orders/actions.ts`'s
+  `refundOrderAction`, the webhook route) now awaits it.
+- **`/admin/site-settings`** gained a "Payments" section
+  (`StripeSettingsForm.tsx`): two write-only password inputs (secret key,
+  webhook signing secret) that always start empty and are never
+  pre-filled with a real value - only the masked preview and an
+  "updated \<date\>" line show what's currently set. A `ConfirmDialog`
+  sits in front of Save (danger=false, but real-money stakes: a bad paste
+  breaks checkout for real customers), and the candidate secret key is
+  test-called against Stripe (`balance.retrieve()`) **before** it's ever
+  persisted, so a typo or wrong-key paste fails immediately with a plain
+  message instead of silently breaking the next real checkout.
+  `looksLikeStripeSecretKey`/`looksLikeStripeWebhookSecret` (`stripe.ts`)
+  reject an obviously wrong prefix (e.g. a publishable `pk_` key pasted
+  into the secret field) before that Stripe call even happens.
+- **What still can't move into the admin**: registering the webhook
+  endpoint itself has to happen in the owner's own Stripe Dashboard
+  (Stripe only issues a signing secret once a URL is registered there) -
+  everything after that (pasting the resulting `whsec_...` value) lives
+  in the friendly UI, but that one step is unavoidably Stripe-side.
+- **Honest tradeoff, stated plainly rather than glossed over**: the
+  decrypted key only ever exists in server memory, but the *ciphertext*
+  sits in a database the single shared admin password can (indirectly,
+  via this app) cause to be decrypted - a downgrade from "only in
+  Vercel's encrypted env store, only the developer can see it." Judged
+  acceptable for a one-owner boutique shop with no other users, not a
+  general recommendation.
+
 ## What's stubbed / explicitly NOT built yet
 
 - Analytics/conversion tracking, abandoned-cart email, wishlist persistence
