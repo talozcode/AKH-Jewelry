@@ -3,6 +3,8 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import type { Availability, Category, Product } from "@/lib/types";
+import { ConfirmDialog } from "../_components/ConfirmDialog";
+import { SlugField } from "../_components/SlugField";
 import { ImageManager } from "./ImageManager";
 import { createProductAction, deleteProductAction, updateProductAction } from "./actions";
 
@@ -65,6 +67,7 @@ export function ProductForm({ product }: { product?: Product }) {
   const [saving, startSaving] = useTransition();
   const [deleting, startDeleting] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
 
   function set<K extends keyof typeof form>(key: K, value: (typeof form)[K]) {
     setForm((f) => ({ ...f, [key]: value }));
@@ -73,6 +76,16 @@ export function ProductForm({ product }: { product?: Product }) {
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    // The web address field is a read-only preview outside "edit" mode, so
+    // there's no <input required> in the DOM for the browser to validate
+    // against in that state - a name made entirely of characters slugify()
+    // strips (e.g. non-Latin text) could otherwise reach the server with
+    // an empty slug. Checked explicitly here instead of relying on native
+    // form validation for a field that isn't always rendered as an input.
+    if (!form.slug.trim()) {
+      setError("Enter a name (in English/numbers), or set a web address manually, before saving.");
+      return;
+    }
     startSaving(async () => {
       const payload = {
         ...form,
@@ -95,10 +108,10 @@ export function ProductForm({ product }: { product?: Product }) {
 
   function handleDelete() {
     if (!product?.id) return;
-    if (!confirm(`Delete "${product.name}"? This can't be undone.`)) return;
     startDeleting(async () => {
       const result = await deleteProductAction(product.id!);
       if (!result.ok) {
+        setConfirmingDelete(false);
         setError(result.error);
         return;
       }
@@ -125,19 +138,17 @@ export function ProductForm({ product }: { product?: Product }) {
             }}
           />
         )}
-        {field(
-          "Slug (URL)",
-          <input
-            className={inputClass}
-            value={form.slug}
-            required
-            onChange={(e) => {
-              setSlugTouched(true);
-              set("slug", e.target.value);
-            }}
-          />,
-          "/product/" + (form.slug || "…")
-        )}
+        <SlugField
+          value={form.slug}
+          onChange={(slug) => set("slug", slug)}
+          onManualEdit={() => setSlugTouched(true)}
+          onResetToAutomatic={() => {
+            setSlugTouched(false);
+            set("slug", slugify(form.name));
+          }}
+          prefix="/product/"
+          inputClassName={inputClass}
+        />
         {field(
           "Category",
           <select className={inputClass} value={form.category} onChange={(e) => set("category", e.target.value as Category)}>
@@ -285,7 +296,7 @@ export function ProductForm({ product }: { product?: Product }) {
         {product ? (
           <button
             type="button"
-            onClick={handleDelete}
+            onClick={() => setConfirmingDelete(true)}
             disabled={deleting}
             className="text-sm text-[var(--admin-danger)] underline underline-offset-2 hover:no-underline disabled:opacity-50"
           >
@@ -293,6 +304,18 @@ export function ProductForm({ product }: { product?: Product }) {
           </button>
         ) : null}
       </div>
+
+      {product ? (
+        <ConfirmDialog
+          open={confirmingDelete}
+          title={`Delete "${product.name}"?`}
+          description="This removes it from the shop and can't be undone."
+          confirmLabel="Delete product"
+          pending={deleting}
+          onConfirm={handleDelete}
+          onCancel={() => setConfirmingDelete(false)}
+        />
+      ) : null}
     </form>
   );
 }

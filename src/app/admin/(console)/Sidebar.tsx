@@ -14,6 +14,7 @@ const NAV = [
   { href: "/admin/privacy", label: "Data requests" },
   { href: "/admin/media", label: "Media" },
   { href: "/admin/site-settings", label: "Settings" },
+  { href: "/admin/help", label: "Help" },
 ];
 
 /**

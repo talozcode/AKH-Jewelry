@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireAdminAction } from "@/lib/admin/auth";
+import { friendlyDbError } from "@/lib/admin/friendlyError";
 import { updatePage, type PageContent, type PageKey } from "@/lib/pages";
 
 const REVALIDATE_PATHS: Record<PageKey, string[]> = {
@@ -27,6 +28,6 @@ export async function updatePageAction<K extends PageKey>(
     for (const path of REVALIDATE_PATHS[key]) revalidatePath(path);
     return { ok: true };
   } catch (err) {
-    return { ok: false, error: err instanceof Error ? err.message : "Failed to save" };
+    return { ok: false, error: err instanceof Error ? friendlyDbError(err.message) : "Failed to save" };
   }
 }

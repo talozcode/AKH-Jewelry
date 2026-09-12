@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { wixImg } from "@/lib/wixImage";
+import { ConfirmDialog } from "../_components/ConfirmDialog";
 import { uploadProductImageAction } from "./actions";
 
 export function ImageManager({
@@ -13,6 +14,10 @@ export function ImageManager({
 }) {
   const [uploading, startUpload] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  // Index of the photo pending removal confirmation, or null when no
+  // confirmation is open. An index (not a boolean) because this list
+  // renders one Remove button per photo.
+  const [confirmingRemove, setConfirmingRemove] = useState<number | null>(null);
 
   function handleFile(file: File) {
     setError(null);
@@ -58,7 +63,7 @@ export function ImageManager({
             </div>
             <button
               type="button"
-              onClick={() => remove(i)}
+              onClick={() => setConfirmingRemove(i)}
               className="mt-1 w-full rounded-md border border-[var(--admin-border)] py-0.5 text-xs text-[var(--admin-text-muted)] hover:border-[var(--admin-danger-border)] hover:text-[var(--admin-danger)]"
             >
               Remove
@@ -85,6 +90,17 @@ export function ImageManager({
         First photo is the primary image shown on the shop grid and homepage. Photos are resized to
         1800px on upload.
       </p>
+      <ConfirmDialog
+        open={confirmingRemove !== null}
+        title="Remove this photo?"
+        description="It comes off this product. Nothing is deleted for good until you press Save changes - Cancel here or leave the page to keep it."
+        confirmLabel="Remove photo"
+        onConfirm={() => {
+          if (confirmingRemove !== null) remove(confirmingRemove);
+          setConfirmingRemove(null);
+        }}
+        onCancel={() => setConfirmingRemove(null)}
+      />
     </div>
   );
 }

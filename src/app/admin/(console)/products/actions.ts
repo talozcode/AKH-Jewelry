@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import sharp from "sharp";
 import { requireAdminAction } from "@/lib/admin/auth";
+import { friendlyDbError } from "@/lib/admin/friendlyError";
 import { createProduct, deleteProduct, getProductById, updateProduct } from "@/lib/products";
 import { supabaseAdmin } from "@/lib/supabase/server";
 import type { Product } from "@/lib/types";
@@ -25,7 +26,7 @@ export async function createProductAction(
     revalidatePath("/admin/products");
     return { ok: true, id: product.id! };
   } catch (err) {
-    return { ok: false, error: err instanceof Error ? err.message : "Failed to create product" };
+    return { ok: false, error: err instanceof Error ? friendlyDbError(err.message) : "Failed to create product" };
   }
 }
 
@@ -41,7 +42,7 @@ export async function updateProductAction(
     revalidatePath("/admin/products");
     return { ok: true };
   } catch (err) {
-    return { ok: false, error: err instanceof Error ? err.message : "Failed to update product" };
+    return { ok: false, error: err instanceof Error ? friendlyDbError(err.message) : "Failed to update product" };
   }
 }
 
@@ -54,7 +55,7 @@ export async function deleteProductAction(id: string): Promise<{ ok: true } | { 
     revalidatePath("/admin/products");
     return { ok: true };
   } catch (err) {
-    return { ok: false, error: err instanceof Error ? err.message : "Failed to delete product" };
+    return { ok: false, error: err instanceof Error ? friendlyDbError(err.message) : "Failed to delete product" };
   }
 }
 
@@ -87,11 +88,11 @@ export async function uploadProductImageAction(
     const { error: uploadError } = await db.storage
       .from("product-images")
       .upload(path, resized, { contentType: "image/jpeg", upsert: false });
-    if (uploadError) return { ok: false, error: uploadError.message };
+    if (uploadError) return { ok: false, error: friendlyDbError(uploadError.message) };
 
     const { data } = db.storage.from("product-images").getPublicUrl(path);
     return { ok: true, url: data.publicUrl };
   } catch (err) {
-    return { ok: false, error: err instanceof Error ? err.message : "Upload failed" };
+    return { ok: false, error: err instanceof Error ? friendlyDbError(err.message) : "Upload failed" };
   }
 }

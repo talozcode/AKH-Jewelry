@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireAdminAction } from "@/lib/admin/auth";
+import { friendlyDbError } from "@/lib/admin/friendlyError";
 import { canRefund, getOrderById, refundOrder, updateOrderStatus, type SettableOrderStatus } from "@/lib/db/orders";
 import { stripeClient } from "@/lib/stripe";
 
@@ -25,7 +26,7 @@ export async function updateOrderStatusAction(
     revalidatePath("/admin");
     return { ok: true };
   } catch (err) {
-    return { ok: false, error: err instanceof Error ? err.message : "Failed to update status" };
+    return { ok: false, error: err instanceof Error ? friendlyDbError(err.message) : "Failed to update status" };
   }
 }
 
@@ -61,6 +62,6 @@ export async function refundOrderAction(id: string): Promise<{ ok: true } | { ok
     revalidatePath("/admin");
     return { ok: true };
   } catch (err) {
-    return { ok: false, error: err instanceof Error ? err.message : "Refund failed" };
+    return { ok: false, error: err instanceof Error ? friendlyDbError(err.message) : "Refund failed" };
   }
 }

@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import sharp from "sharp";
 import { requireAdminAction } from "@/lib/admin/auth";
+import { friendlyDbError } from "@/lib/admin/friendlyError";
 import { deleteMediaAsset } from "@/lib/media";
 import { supabaseAdmin } from "@/lib/supabase/server";
 
@@ -33,19 +34,19 @@ export async function uploadSiteMediaAction(
     const { error: uploadError } = await db.storage
       .from("site-media")
       .upload(path, resized, { contentType: "image/jpeg", upsert: false });
-    if (uploadError) return { ok: false, error: uploadError.message };
+    if (uploadError) return { ok: false, error: friendlyDbError(uploadError.message) };
 
     const { data } = db.storage.from("site-media").getPublicUrl(path);
 
     const { error: dbError } = await db
       .from("media_assets")
       .insert({ url: data.publicUrl, storage_path: path, filename });
-    if (dbError) return { ok: false, error: dbError.message };
+    if (dbError) return { ok: false, error: friendlyDbError(dbError.message) };
 
     revalidatePath("/admin/media");
     return { ok: true, url: data.publicUrl };
   } catch (err) {
-    return { ok: false, error: err instanceof Error ? err.message : "Upload failed" };
+    return { ok: false, error: err instanceof Error ? friendlyDbError(err.message) : "Upload failed" };
   }
 }
 
@@ -56,6 +57,6 @@ export async function deleteSiteMediaAction(id: string): Promise<{ ok: true } | 
     revalidatePath("/admin/media");
     return { ok: true };
   } catch (err) {
-    return { ok: false, error: err instanceof Error ? err.message : "Delete failed" };
+    return { ok: false, error: err instanceof Error ? friendlyDbError(err.message) : "Delete failed" };
   }
 }

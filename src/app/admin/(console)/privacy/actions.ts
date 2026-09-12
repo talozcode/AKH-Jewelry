@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireAdminAction } from "@/lib/admin/auth";
+import { friendlyDbError } from "@/lib/admin/friendlyError";
 import { anonymizeOrdersByEmail, exportPersonalData, findPersonalDataByEmail, type PersonalDataSummary } from "@/lib/db/privacy";
 
 export async function lookupPersonalDataAction(
@@ -14,7 +15,7 @@ export async function lookupPersonalDataAction(
     const summary = await findPersonalDataByEmail(trimmed);
     return { ok: true, summary };
   } catch (err) {
-    return { ok: false, error: err instanceof Error ? err.message : "Lookup failed" };
+    return { ok: false, error: err instanceof Error ? friendlyDbError(err.message) : "Lookup failed" };
   }
 }
 
@@ -24,7 +25,7 @@ export async function exportPersonalDataAction(email: string): Promise<{ ok: tru
     const data = await exportPersonalData(email.trim());
     return { ok: true, json: JSON.stringify(data, null, 2) };
   } catch (err) {
-    return { ok: false, error: err instanceof Error ? err.message : "Export failed" };
+    return { ok: false, error: err instanceof Error ? friendlyDbError(err.message) : "Export failed" };
   }
 }
 
@@ -51,6 +52,6 @@ export async function erasePersonalDataAction(
     revalidatePath("/admin");
     return { ok: true, erasedCount: result.erasedCount };
   } catch (err) {
-    return { ok: false, error: err instanceof Error ? err.message : "Erasure failed" };
+    return { ok: false, error: err instanceof Error ? friendlyDbError(err.message) : "Erasure failed" };
   }
 }

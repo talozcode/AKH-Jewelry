@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import type { Order, SettableOrderStatus } from "@/lib/db/orders";
+import { ConfirmDialog } from "../_components/ConfirmDialog";
 import { refundOrderAction, updateOrderStatusAction } from "./actions";
 
 const STATUSES: SettableOrderStatus[] = ["unfulfilled", "shipped"];
@@ -12,6 +13,7 @@ export function OrderRow({ order, productOutOfStock }: { order: Order; productOu
   const [pending, startTransition] = useTransition();
   const [refunding, startRefund] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [confirmingRefund, setConfirmingRefund] = useState(false);
 
   function handleStatusChange(status: SettableOrderStatus) {
     startTransition(async () => {
@@ -21,10 +23,16 @@ export function OrderRow({ order, productOutOfStock }: { order: Order; productOu
   }
 
   function handleRefund() {
-    if (!confirm(`Refund ${order.product_name} (${(order.amount_total / 100).toLocaleString()} ${order.currency})? This can't be undone.`)) return;
     setError(null);
     startRefund(async () => {
       const result = await refundOrderAction(order.id);
+      // Close the dialog either way: on failure so the error shows on the
+      // row itself instead of behind a stale confirmation; on success
+      // because this row survives router.refresh() (it's keyed by
+      // order.id, not unmounted), so nothing else would ever close it and
+      // the "Refund this order?" dialog would sit on top of the row after
+      // it had already flipped to Refunded underneath.
+      setConfirmingRefund(false);
       if (!result.ok) {
         setError(result.error);
         return;
@@ -32,6 +40,8 @@ export function OrderRow({ order, productOutOfStock }: { order: Order; productOu
       router.refresh();
     });
   }
+
+  const amountLabel = `${order.currency === "ILS" ? "₪" : order.currency === "USD" ? "$" : order.currency + " "}${(order.amount_total / 100).toLocaleString()}`;
 
   return (
     <tr className="border-b border-[var(--admin-border)] align-top last:border-0 hover:bg-[var(--admin-surface-2)]/60">
@@ -90,7 +100,7 @@ export function OrderRow({ order, productOutOfStock }: { order: Order; productOu
             </select>
             <button
               type="button"
-              onClick={handleRefund}
+              onClick={() => setConfirmingRefund(true)}
               disabled={refunding}
               className="block text-xs text-[var(--admin-danger)] underline underline-offset-2 hover:opacity-75 disabled:opacity-50"
             >
@@ -100,6 +110,16 @@ export function OrderRow({ order, productOutOfStock }: { order: Order; productOu
           </div>
         )}
       </td>
+
+      <ConfirmDialog
+        open={confirmingRefund}
+        title="Refund this order?"
+        description={`Refunds ${amountLabel} to the customer through Stripe. This can't be undone.`}
+        confirmLabel="Refund order"
+        pending={refunding}
+        onConfirm={handleRefund}
+        onCancel={() => setConfirmingRefund(false)}
+      />
     </tr>
   );
 }

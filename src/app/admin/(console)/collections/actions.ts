@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireAdminAction } from "@/lib/admin/auth";
+import { friendlyDbError } from "@/lib/admin/friendlyError";
 import { createCollection, deleteCollection, getCollectionById, updateCollection } from "@/lib/collections";
 import type { Collection } from "@/lib/collections";
 
@@ -22,7 +23,7 @@ export async function createCollectionAction(
     revalidateCollections([collection.slug]);
     return { ok: true, id: collection.id };
   } catch (err) {
-    return { ok: false, error: err instanceof Error ? err.message : "Failed to create collection" };
+    return { ok: false, error: err instanceof Error ? friendlyDbError(err.message) : "Failed to create collection" };
   }
 }
 
@@ -37,7 +38,7 @@ export async function updateCollectionAction(
     revalidateCollections(previous && previous.slug !== updated.slug ? [previous.slug, updated.slug] : [updated.slug]);
     return { ok: true };
   } catch (err) {
-    return { ok: false, error: err instanceof Error ? err.message : "Failed to update collection" };
+    return { ok: false, error: err instanceof Error ? friendlyDbError(err.message) : "Failed to update collection" };
   }
 }
 
@@ -49,6 +50,6 @@ export async function deleteCollectionAction(id: string): Promise<{ ok: true } |
     if (collection) revalidateCollections([collection.slug]);
     return { ok: true };
   } catch (err) {
-    return { ok: false, error: err instanceof Error ? err.message : "Failed to delete collection" };
+    return { ok: false, error: err instanceof Error ? friendlyDbError(err.message) : "Failed to delete collection" };
   }
 }

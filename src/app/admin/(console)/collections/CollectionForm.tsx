@@ -5,7 +5,9 @@ import { useState, useTransition } from "react";
 import type { Collection } from "@/lib/collections";
 import type { Product } from "@/lib/types";
 import type { MediaAsset } from "@/lib/media";
+import { ConfirmDialog } from "../_components/ConfirmDialog";
 import { MediaPicker } from "../_components/MediaPicker";
+import { SlugField } from "../_components/SlugField";
 import { ProductPicker } from "./ProductPicker";
 import { createCollectionAction, deleteCollectionAction, updateCollectionAction } from "./actions";
 
@@ -59,6 +61,7 @@ export function CollectionForm({
   const [saving, startSaving] = useTransition();
   const [deleting, startDeleting] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
 
   function set<K extends keyof typeof form>(key: K, value: (typeof form)[K]) {
     setForm((f) => ({ ...f, [key]: value }));
@@ -67,6 +70,13 @@ export function CollectionForm({
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    // See ProductForm's identical guard: the web address field is a
+    // read-only preview outside "edit" mode, so there's no <input
+    // required> for the browser to validate against in that state.
+    if (!form.slug.trim()) {
+      setError("Enter a name (in English/numbers), or set a web address manually, before saving.");
+      return;
+    }
     startSaving(async () => {
       const result = collection?.id ? await updateCollectionAction(collection.id, form) : await createCollectionAction(form);
       if (!result.ok) {
@@ -80,10 +90,10 @@ export function CollectionForm({
 
   function handleDelete() {
     if (!collection?.id) return;
-    if (!confirm(`Delete "${collection.name}"? This can't be undone.`)) return;
     startDeleting(async () => {
       const result = await deleteCollectionAction(collection.id);
       if (!result.ok) {
+        setConfirmingDelete(false);
         setError(result.error);
         return;
       }
@@ -110,19 +120,17 @@ export function CollectionForm({
             }}
           />
         )}
-        {field(
-          "Slug (URL)",
-          <input
-            className={inputClass}
-            value={form.slug}
-            required
-            onChange={(e) => {
-              setSlugTouched(true);
-              set("slug", e.target.value);
-            }}
-          />,
-          "/collections/" + (form.slug || "…")
-        )}
+        <SlugField
+          value={form.slug}
+          onChange={(slug) => set("slug", slug)}
+          onManualEdit={() => setSlugTouched(true)}
+          onResetToAutomatic={() => {
+            setSlugTouched(false);
+            set("slug", slugify(form.name));
+          }}
+          prefix="/collections/"
+          inputClassName={inputClass}
+        />
       </section>
 
       {field("Tagline", <input className={inputClass} value={form.tagline} required onChange={(e) => set("tagline", e.target.value)} />)}
@@ -163,7 +171,7 @@ export function CollectionForm({
         {collection ? (
           <button
             type="button"
-            onClick={handleDelete}
+            onClick={() => setConfirmingDelete(true)}
             disabled={deleting}
             className="text-sm text-[var(--admin-danger)] underline underline-offset-2 hover:no-underline disabled:opacity-50"
           >
@@ -171,6 +179,18 @@ export function CollectionForm({
           </button>
         ) : null}
       </div>
+
+      {collection ? (
+        <ConfirmDialog
+          open={confirmingDelete}
+          title={`Delete "${collection.name}"?`}
+          description="This removes it from the website and can't be undone. Products in it are not deleted."
+          confirmLabel="Delete collection"
+          pending={deleting}
+          onConfirm={handleDelete}
+          onCancel={() => setConfirmingDelete(false)}
+        />
+      ) : null}
     </form>
   );
 }

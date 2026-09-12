@@ -892,6 +892,71 @@ a 375x812 viewport with chrome-devtools.
   (responsive padding and headline sizes were already in place from the
   Stage 2 legal-pages work).
 
+## Admin friendliness for a non-technical owner (built 2026-09-12)
+
+The owner who actually runs this admin console is not technical. Built
+per her direct question ("is there anything we should do to make the
+backend more friendly/easier for her?"), verified with 3 parallel
+read-only audit agents against the implementation.
+
+- **Friendly error messages** (`src/lib/admin/friendlyError.ts`,
+  `friendlyDbError()`): every admin server action used to hand a caught
+  exception's raw `.message` straight to the UI - a duplicate-slug save
+  could show `duplicate key value violates unique constraint
+  "products_slug_key"` verbatim. `friendlyDbError()` is a pure function
+  that pattern-matches the common Postgres/Supabase failure shapes
+  (unique/not-null/foreign-key/check constraint violations, JWT/network
+  failures) to a plain-English sentence, with a single generic reassuring
+  fallback ("Something went wrong saving this...") for anything
+  unrecognized - it never echoes raw driver text. Applied in every
+  `actions.ts` catch block across products/collections/pages/orders/
+  privacy/site-settings/media, and to the two non-exception Supabase
+  Storage/DB result errors in the upload actions. Deliberately NOT
+  applied to hand-written validation strings the actions already
+  construct themselves ("Enter an email address", "Order not found") -
+  those are already meant for a human. Tested directly
+  (`friendlyError.test.ts`) since it's a pure function extracted for
+  exactly that reason, per this file's own Tests-section strategy.
+- **In-page confirmation dialogs** (`_components/ConfirmDialog.tsx`)
+  replace every native browser `confirm()` for a destructive action
+  (delete product/collection/media, remove a photo from a product,
+  refund an order) - a native `confirm()` renders as grey system chrome
+  outside the site's own design, which can read as a computer error
+  rather than a normal part of the page. Portals to `document.body`
+  (`OrderRow` renders one per table row, and a `<div>` isn't valid HTML
+  directly inside a `<tr>`). Genuinely modal, not just visually so: opens
+  with focus on Cancel (the safe default), Escape closes it, Tab/Shift+Tab
+  cycle only between its own two buttons rather than leaking into the
+  page behind the backdrop, and focus returns to whichever button
+  triggered it once it closes. Cancel and the backdrop are both disabled
+  while an action is mid-flight, so "cancelling" can't be clicked while
+  something irreversible is already in progress. `ImageManager`'s
+  per-photo Remove is confirmed too, but scoped honestly: removing a
+  photo there only changes the form's local state until "Save changes"
+  is pressed, so its dialog says so rather than claiming it "can't be
+  undone" like the others.
+- **"Slug (URL)" field replaced with a read-only preview**
+  (`_components/SlugField.tsx`): a technical concept (a URL-safe string)
+  used to sit right next to "Name" as a freely editable input with
+  nothing explaining what breaks if it's typed wrong. It's still
+  auto-generated from the name; this just stops presenting it as
+  something to fill in by default, showing "/product/actual-slug" as
+  plain read-only text with a small "Change the web address" link to
+  reveal the real input for the rare case someone wants to override it.
+  "Use the automatic web address" (shown while editing) actually resets
+  to `slugify(name)` and clears the touched flag, matching what its own
+  label promises, rather than just toggling the view. Because the
+  read-only preview mode has no `<input required>` in the DOM for the
+  browser to validate, both `ProductForm` and `CollectionForm` also
+  check `form.slug.trim()` explicitly in `handleSubmit` before saving.
+- **`/admin/help`**: a short, plain-language "how do I..." page (add a
+  piece, mark sold out, edit page text, handle an order/refund, what an
+  Oversold flag means, where Media differs from a product's own photos),
+  linked from the Sidebar. Every claim in it was checked against the
+  actual code it describes (button labels, exact behavior) rather than
+  written from memory - the previous draft claimed "photo deletion always
+  asks to confirm first" before `ImageManager`'s Remove actually did.
+
 ## What's stubbed / explicitly NOT built yet
 
 - Analytics/conversion tracking, abandoned-cart email, wishlist persistence
