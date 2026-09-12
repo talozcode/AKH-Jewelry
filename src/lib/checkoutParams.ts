@@ -112,18 +112,35 @@ export type CheckoutLine = {
  *
  * One line item per cart line, quantity carried through directly (Stripe
  * charges unit_amount * quantity itself - no need to multiply here).
- * `productId`/`slug`/`size` are attached as metadata on each line's
- * `product_data`, which Stripe copies onto the resulting LineItem's own
- * `metadata` when read back via `listLineItems()` - this is what lets the
- * webhook reconstruct which internal product (and size) each paid line
- * corresponds to, since a Checkout Session's line items aren't included in
- * the `checkout.session.completed` event payload itself.
+ * `productId`/`slug`/`name`/`size` are attached as metadata directly on
+ * each LINE ITEM (a sibling of `price_data`, not nested inside
+ * `price_data.product_data.metadata` - verified live against Stripe's
+ * real API: metadata nested under `product_data` only round-trips onto
+ * the expanded `price.product.metadata`, not onto the line item's own
+ * `metadata`, and needs `expand: ["data.price.product"]` to read back at
+ * all. Metadata set on the line item itself round-trips onto
+ * `line_item.metadata` with a plain `listLineItems()` call, no expand
+ * needed). This is what lets the webhook reconstruct which internal
+ * product (and size) each paid line corresponds to, since a Checkout
+ * Session's line items aren't included in the
+ * `checkout.session.completed` event payload itself.
  */
 export function buildCartCheckoutParams(lines: CheckoutLine[], origin: string): Stripe.Checkout.SessionCreateParams {
   return {
     mode: "payment",
     line_items: lines.map((line) => ({
       quantity: line.quantity,
+      metadata: {
+        productId: line.product.id ?? "",
+        slug: line.product.slug,
+        // Also carried in metadata (not just as the line's `name`, which
+        // Stripe already shows on its own checkout page) so
+        // /order/success can display it without a database lookup - that
+        // page is unauthenticated and runs immediately after payment,
+        // before the webhook may have even run yet.
+        name: line.product.name,
+        size: line.size ?? "",
+      },
       price_data: {
         currency: line.product.currency.toLowerCase(),
         unit_amount: Math.round(line.product.price * 100),
@@ -135,17 +152,6 @@ export function buildCartCheckoutParams(lines: CheckoutLine[], origin: string): 
           // Stripe's checkout page directly, which needs a real
           // publicly reachable image URL, not a bare id.
           ...(line.product.images[0] ? { images: [wixImg(line.product.images[0], 900, 1125)] } : {}),
-          metadata: {
-            productId: line.product.id ?? "",
-            slug: line.product.slug,
-            // Also carried in metadata (not just as the line's `name`,
-            // which Stripe already shows on its own checkout page) so
-            // /order/success can display it without a database lookup -
-            // that page is unauthenticated and runs immediately after
-            // payment, before the webhook may have even run yet.
-            name: line.product.name,
-            size: line.size ?? "",
-          },
         },
       },
     })),

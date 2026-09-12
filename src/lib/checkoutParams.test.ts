@@ -192,18 +192,11 @@ describe("buildCartCheckoutParams", () => {
       ],
       "https://akhjewelry.com"
     );
-    expect(params.line_items![0].price_data!.product_data!.metadata).toEqual({
-      productId: "prod_1",
-      slug: "test-ring",
-      name: "Test Ring",
-      size: "54",
-    });
-    expect(params.line_items![1].price_data!.product_data!.metadata).toEqual({
-      productId: "prod_2",
-      slug: "test-necklace",
-      name: "Test Necklace",
-      size: "",
-    });
+    // On the line item itself, not nested under price_data.product_data -
+    // verified live against Stripe's real API that only the former
+    // round-trips onto listLineItems()'s plain (unexpanded) response.
+    expect(params.line_items![0].metadata).toEqual({ productId: "prod_1", slug: "test-ring", name: "Test Ring", size: "54" });
+    expect(params.line_items![1].metadata).toEqual({ productId: "prod_2", slug: "test-necklace", name: "Test Necklace", size: "" });
   });
 
   it("does not guard against a zero or negative price: passes it straight through to unit_amount", () => {
