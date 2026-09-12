@@ -23,13 +23,19 @@ export default async function OrdersPage({
   const validStatus = STATUS_FILTERS.find((f) => f.value === status)?.value;
   const orders = await getOrders(validStatus ? { status: validStatus } : undefined);
 
-  // Only refunded orders need the "relist?" prompt, so only those trigger a
-  // product lookup (see OrderRow: inventory never auto-relists on refund).
-  const outOfStockByOrderId = new Map<string, boolean>();
+  // Only refunded orders need the "relist?" prompt, so only those trigger
+  // product lookups (see OrderRow: inventory never auto-relists on
+  // refund). A multi-item order can have several out-of-stock items, so
+  // this is a set of product ids rather than one boolean per order.
+  const outOfStockProductIds = new Set<string>();
+  const checkedProductIds = new Set<string>();
   for (const order of orders) {
-    if (order.status === "refunded" && order.product_id) {
-      const product = await getProductById(order.product_id);
-      outOfStockByOrderId.set(order.id, product?.availability === "Out of Stock");
+    if (order.status !== "refunded") continue;
+    for (const item of order.items) {
+      if (!item.product_id || checkedProductIds.has(item.product_id)) continue;
+      checkedProductIds.add(item.product_id);
+      const product = await getProductById(item.product_id);
+      if (product?.availability === "Out of Stock") outOfStockProductIds.add(item.product_id);
     }
   }
 
@@ -69,7 +75,7 @@ export default async function OrdersPage({
             </thead>
             <tbody>
               {orders.map((o) => (
-                <OrderRow key={o.id} order={o} productOutOfStock={outOfStockByOrderId.get(o.id) ?? false} />
+                <OrderRow key={o.id} order={o} outOfStockProductIds={outOfStockProductIds} />
               ))}
             </tbody>
           </table>

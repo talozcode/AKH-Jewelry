@@ -148,7 +148,7 @@ export function PrivacyLookupForm() {
                     {summary.orders.map((o) => (
                       <tr key={o.id} className="border-b border-[var(--admin-border)] last:border-0">
                         <td className="py-2 pr-3 text-[var(--admin-text-muted)]">{new Date(o.created_at).toLocaleDateString("en-GB")}</td>
-                        <td className="py-2 pr-3 text-[var(--admin-text)]">{o.product_name}</td>
+                        <td className="py-2 pr-3 text-[var(--admin-text)]">{o.items.map((item) => item.product_name).join(", ") || "no items"}</td>
                         <td className="py-2 pr-3 text-[var(--admin-text-muted)]">{o.status}</td>
                         <td className="py-2 pr-3 text-[var(--admin-text-muted)]">{o.anonymized_at ? new Date(o.anonymized_at).toLocaleDateString("en-GB") : "No"}</td>
                       </tr>

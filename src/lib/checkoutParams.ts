@@ -13,17 +13,21 @@ import type Stripe from "stripe";
 export type PurchasabilityCheck = { ok: true } | { ok: false; error: string };
 
 /**
- * `size` is checked here, not just trusted from the caller: createCheckoutSession
- * is a Server Action, directly callable with any string regardless of what
- * PurchaseArea.tsx's UI actually offers (it only ever sends `undefined` or
- * one of `product.availableSizes`). No financial impact either way (price
- * doesn't depend on size), but an unvalidated size would land verbatim in
- * the Stripe line-item description and the `orders.size` column, so a
- * tampered/direct call could write arbitrary text there.
+ * One line of a cart/checkout: `size` is checked here, not just trusted
+ * from the caller: createCartCheckoutSession is a Server Action, directly
+ * callable with any string regardless of what the UI actually offers (it
+ * only ever sends `undefined` or one of `product.availableSizes`). No
+ * financial impact from a bad size either way (price doesn't depend on
+ * it), but an unvalidated size would land verbatim in the Stripe line-item
+ * description and the `order_items.size` column, so a tampered/direct
+ * call could write arbitrary text there. `quantity` is checked against
+ * actual stock for the same reason: a direct call could otherwise request
+ * more than exists before the atomic per-unit decrement ever runs.
  */
 export function checkPurchasable(
-  product: Pick<Product, "isPublished" | "availability" | "availableSizes"> | undefined,
-  size?: string
+  product: Pick<Product, "isPublished" | "availability" | "availableSizes" | "stockQuantity"> | undefined,
+  size?: string,
+  quantity: number = 1
 ): PurchasabilityCheck {
   if (!product || !product.isPublished) return { ok: false, error: "This piece is no longer available." };
   if (product.availability === "Out of Stock") return { ok: false, error: "This piece is out of stock." };
@@ -31,6 +35,42 @@ export function checkPurchasable(
     if (!product.availableSizes || !product.availableSizes.includes(size)) {
       return { ok: false, error: "Please select a valid size." };
     }
+  }
+  if (!Number.isInteger(quantity) || quantity < 1) {
+    return { ok: false, error: "Quantity must be at least 1." };
+  }
+  if (product.availability === "In Stock") {
+    if (product.stockQuantity === null || product.stockQuantity === undefined) {
+      // Untracked "In Stock" means one-of-one (see decideInventoryEffect in
+      // products.ts): there is exactly one physical piece, so a quantity
+      // above 1 can never be fulfilled regardless of what a race-free
+      // decrement would otherwise catch.
+      if (quantity > 1) return { ok: false, error: "Only one of this piece exists - quantity can't be more than 1." };
+    } else if (quantity > product.stockQuantity) {
+      return { ok: false, error: `Only ${product.stockQuantity} left in stock.` };
+    }
+  }
+  return { ok: true };
+}
+
+/**
+ * A whole cart is purchasable only if every line is, AND every line shares
+ * one currency - a single Stripe Checkout Session can only charge in one
+ * currency, and this shop's catalog deliberately mixes ILS and USD per
+ * product (see CLAUDE.md), so a cart spanning both has no single valid
+ * session to build.
+ */
+export function checkCartPurchasable(
+  lines: { product: (Pick<Product, "isPublished" | "availability" | "availableSizes" | "stockQuantity" | "currency">) | undefined; size?: string; quantity: number }[]
+): PurchasabilityCheck {
+  if (lines.length === 0) return { ok: false, error: "Your cart is empty." };
+  for (const line of lines) {
+    const check = checkPurchasable(line.product, line.size, line.quantity);
+    if (!check.ok) return check;
+  }
+  const currencies = new Set(lines.map((l) => l.product!.currency));
+  if (currencies.size > 1) {
+    return { ok: false, error: "Your cart has items priced in different currencies - check out one currency at a time." };
   }
   return { ok: true };
 }
@@ -58,44 +98,59 @@ const ALLOWED_SHIPPING_COUNTRIES: string[] = [
   "VC", "VE", "VG", "VN", "VU", "WF", "WS", "XK", "YE", "YT", "ZA", "ZM", "ZW", "ZZ",
 ] as const;
 
+export type CheckoutLine = {
+  product: Pick<Product, "id" | "slug" | "name" | "currency" | "price" | "images">;
+  size?: string;
+  quantity: number;
+};
+
 /**
  * Builds the params object for stripe.checkout.sessions.create(), pure so
  * the price math is testable without an actual Stripe call - `unit_amount`
  * from a fractional price (e.g. 129.99) is exactly the kind of thing that
  * is untestable inline and costs real money when it silently rounds wrong.
+ *
+ * One line item per cart line, quantity carried through directly (Stripe
+ * charges unit_amount * quantity itself - no need to multiply here).
+ * `productId`/`slug`/`size` are attached as metadata on each line's
+ * `product_data`, which Stripe copies onto the resulting LineItem's own
+ * `metadata` when read back via `listLineItems()` - this is what lets the
+ * webhook reconstruct which internal product (and size) each paid line
+ * corresponds to, since a Checkout Session's line items aren't included in
+ * the `checkout.session.completed` event payload itself.
  */
-export function buildCheckoutParams(
-  product: Pick<Product, "id" | "slug" | "name" | "currency" | "price" | "images">,
-  size: string | undefined,
-  origin: string
-): Stripe.Checkout.SessionCreateParams {
+export function buildCartCheckoutParams(lines: CheckoutLine[], origin: string): Stripe.Checkout.SessionCreateParams {
   return {
     mode: "payment",
-    line_items: [
-      {
-        quantity: 1,
-        price_data: {
-          currency: product.currency.toLowerCase(),
-          unit_amount: Math.round(product.price * 100),
-          product_data: {
-            name: product.name,
-            ...(size ? { description: `Size ${size}` } : {}),
-            // wixImg() always returns a full public URL (either the
-            // Wix CDN or a Supabase Storage URL): safe to hand to
-            // Stripe's checkout page directly, which needs a real
-            // publicly reachable image URL, not a bare id.
-            ...(product.images[0] ? { images: [wixImg(product.images[0], 900, 1125)] } : {}),
+    line_items: lines.map((line) => ({
+      quantity: line.quantity,
+      price_data: {
+        currency: line.product.currency.toLowerCase(),
+        unit_amount: Math.round(line.product.price * 100),
+        product_data: {
+          name: line.product.name,
+          ...(line.size ? { description: `Size ${line.size}` } : {}),
+          // wixImg() always returns a full public URL (either the
+          // Wix CDN or a Supabase Storage URL): safe to hand to
+          // Stripe's checkout page directly, which needs a real
+          // publicly reachable image URL, not a bare id.
+          ...(line.product.images[0] ? { images: [wixImg(line.product.images[0], 900, 1125)] } : {}),
+          metadata: {
+            productId: line.product.id ?? "",
+            slug: line.product.slug,
+            // Also carried in metadata (not just as the line's `name`,
+            // which Stripe already shows on its own checkout page) so
+            // /order/success can display it without a database lookup -
+            // that page is unauthenticated and runs immediately after
+            // payment, before the webhook may have even run yet.
+            name: line.product.name,
+            size: line.size ?? "",
           },
         },
       },
-    ],
+    })),
     shipping_address_collection: { allowed_countries: [...ALLOWED_SHIPPING_COUNTRIES] },
     success_url: `${origin}/order/success?session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: `${origin}/product/${product.slug}`,
-    metadata: {
-      productId: product.id ?? "",
-      slug: product.slug,
-      size: size ?? "",
-    },
+    cancel_url: `${origin}/cart`,
   };
 }

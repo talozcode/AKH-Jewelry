@@ -7,10 +7,8 @@ import { isDuplicateSessionError, sessionToOrderRow } from "./orders";
 // Session/CustomerDetails types.
 type SessionInput = Parameters<typeof sessionToOrderRow>[0];
 
-const product = { id: "prod_1", name: "Test Ring", slug: "test-ring", price: 900, currency: "ILS" as const };
-
 describe("sessionToOrderRow", () => {
-  it("maps a full session with shipping details to the expected row shape", () => {
+  it("maps a full session with shipping details to the expected header row shape", () => {
     const session = {
       id: "cs_test_1",
       payment_intent: "pi_test_1",
@@ -24,15 +22,9 @@ describe("sessionToOrderRow", () => {
       currency: "ils",
     } as SessionInput;
 
-    const row = sessionToOrderRow(session, product, "54");
+    const row = sessionToOrderRow(session);
 
     expect(row).toEqual({
-      product_id: "prod_1",
-      product_name: "Test Ring",
-      product_slug: "test-ring",
-      product_price: 900,
-      product_currency: "ILS",
-      size: "54",
       customer_name: "Jane Doe",
       customer_email: "jane@example.com",
       shipping_line1: "1 Main St",
@@ -61,7 +53,7 @@ describe("sessionToOrderRow", () => {
       currency: null,
     } as SessionInput;
 
-    const row = sessionToOrderRow(session, product, null);
+    const row = sessionToOrderRow(session);
 
     expect(row.customer_name).toBe("");
     expect(row.customer_email).toBe("");
@@ -78,7 +70,12 @@ describe("sessionToOrderRow", () => {
     expect(Object.values(row).some((v) => v === undefined)).toBe(false);
   });
 
-  it("falls back to the product's own currency when the session has none", () => {
+  it("falls back to ILS when the session has no currency at all", () => {
+    // Unlike the old single-product version, there's no per-product
+    // currency to fall back to here - currency now lives only on the
+    // order header, one Checkout Session = one currency for every line
+    // item in it, so ILS (the shop's primary currency) is the sane
+    // last-resort default rather than guessing from a product.
     const session = {
       id: "cs_test_3",
       payment_intent: null,
@@ -87,8 +84,7 @@ describe("sessionToOrderRow", () => {
       amount_total: 90000,
       currency: null,
     } as SessionInput;
-    const row = sessionToOrderRow(session, product, null);
-    expect(row.currency).toBe("ILS");
+    expect(sessionToOrderRow(session).currency).toBe("ILS");
   });
 
   it("extracts a string payment_intent id directly, not the id of an expanded object", () => {
@@ -100,7 +96,7 @@ describe("sessionToOrderRow", () => {
       amount_total: 0,
       currency: null,
     } as SessionInput;
-    expect(sessionToOrderRow(session, product, null).stripe_payment_intent_id).toBe("pi_direct");
+    expect(sessionToOrderRow(session).stripe_payment_intent_id).toBe("pi_direct");
   });
 
   it("defaults amount_total to 0 rather than null/undefined when Stripe omits it", () => {
@@ -112,7 +108,7 @@ describe("sessionToOrderRow", () => {
       amount_total: null,
       currency: null,
     } as SessionInput;
-    expect(sessionToOrderRow(session, product, null).amount_total).toBe(0);
+    expect(sessionToOrderRow(session).amount_total).toBe(0);
   });
 });
 

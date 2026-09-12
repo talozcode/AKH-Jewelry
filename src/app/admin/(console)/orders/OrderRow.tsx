@@ -2,13 +2,20 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import type { Order, SettableOrderStatus } from "@/lib/db/orders";
+import type { OrderWithItems, SettableOrderStatus } from "@/lib/db/orders";
 import { ConfirmDialog } from "../_components/ConfirmDialog";
 import { refundOrderAction, updateOrderStatusAction } from "./actions";
 
 const STATUSES: SettableOrderStatus[] = ["unfulfilled", "shipped"];
 
-export function OrderRow({ order, productOutOfStock }: { order: Order; productOutOfStock: boolean }) {
+/**
+ * `outOfStockProductIds` - the subset of this order's product ids that are
+ * currently Out of Stock, used only for the post-refund "relist?" prompt.
+ * Passed as a Set (not the boolean this used to be for a single-product
+ * order) since a multi-item order can have some items still in stock and
+ * others not - each gets its own relist link now.
+ */
+export function OrderRow({ order, outOfStockProductIds }: { order: OrderWithItems; outOfStockProductIds: Set<string> }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [refunding, startRefund] = useTransition();
@@ -41,24 +48,38 @@ export function OrderRow({ order, productOutOfStock }: { order: Order; productOu
     });
   }
 
-  const amountLabel = `${order.currency === "ILS" ? "₪" : order.currency === "USD" ? "$" : order.currency + " "}${(order.amount_total / 100).toLocaleString()}`;
+  const currencySymbol = order.currency === "ILS" ? "₪" : order.currency === "USD" ? "$" : order.currency + " ";
+  const amountLabel = `${currencySymbol}${(order.amount_total / 100).toLocaleString()}`;
+  const itemsWithOutOfStockFlag = order.items.map((item) => ({
+    ...item,
+    isOutOfStock: item.product_id ? outOfStockProductIds.has(item.product_id) : false,
+  }));
 
   return (
     <tr className="border-b border-[var(--admin-border)] align-top last:border-0 hover:bg-[var(--admin-surface-2)]/60">
       <td className="py-3 pl-5 pr-3 text-[var(--admin-text-muted)]">{new Date(order.created_at).toLocaleDateString("en-GB")}</td>
       <td className="py-3 pr-3">
-        <div className="font-medium text-[var(--admin-text)]">{order.product_name}</div>
-        {order.size ? <div className="text-xs text-[var(--admin-text-muted)]">Size {order.size}</div> : null}
-        <div className="text-xs text-[var(--admin-text-muted)]">
-          {order.currency === "ILS" ? "₪" : order.currency === "USD" ? "$" : order.currency + " "}
+        <div className="space-y-2">
+          {order.items.map((item) => (
+            <div key={item.id}>
+              <div className="font-medium text-[var(--admin-text)]">
+                {item.product_name}
+                {item.quantity > 1 ? ` ×${item.quantity}` : ""}
+              </div>
+              {item.size ? <div className="text-xs text-[var(--admin-text-muted)]">Size {item.size}</div> : null}
+              {item.oversold ? (
+                <span className="mt-1 inline-block rounded-full bg-[var(--admin-danger-bg)] px-2 py-0.5 text-[11px] font-medium text-[var(--admin-danger)]">
+                  Oversold: tracked stock hit 0 after this paid
+                </span>
+              ) : null}
+            </div>
+          ))}
+        </div>
+        <div className="mt-2 text-xs text-[var(--admin-text-muted)]">
+          {currencySymbol}
           {(order.amount_total / 100).toLocaleString()}
           {order.amount_refunded > 0 ? <span className="text-[var(--admin-danger)]"> (refunded)</span> : null}
         </div>
-        {order.oversold ? (
-          <span className="mt-1 inline-block rounded-full bg-[var(--admin-danger-bg)] px-2 py-0.5 text-[11px] font-medium text-[var(--admin-danger)]">
-            Oversold: tracked stock hit 0 after this paid
-          </span>
-        ) : null}
       </td>
       <td className="py-3 pr-3">
         <div className="text-[var(--admin-text)]">{order.customer_name}</div>
@@ -78,11 +99,17 @@ export function OrderRow({ order, productOutOfStock }: { order: Order; productOu
           <div>
             <span className="inline-block rounded-full bg-[var(--admin-danger-bg)] px-2.5 py-1 text-xs font-medium text-[var(--admin-danger)]">Refunded</span>
             {order.refunded_at ? <div className="mt-1 text-xs text-[var(--admin-text-faint)]">{new Date(order.refunded_at).toLocaleDateString("en-GB")}</div> : null}
-            {productOutOfStock ? (
-              <a href={`/admin/products/${order.product_id}`} className="mt-2 block text-xs text-[var(--admin-accent-soft)] underline underline-offset-2">
-                This piece is marked Out of Stock. Relist it?
-              </a>
-            ) : null}
+            {itemsWithOutOfStockFlag
+              .filter((item) => item.isOutOfStock)
+              .map((item) => (
+                <a
+                  key={item.id}
+                  href={`/admin/products/${item.product_id}`}
+                  className="mt-2 block text-xs text-[var(--admin-accent-soft)] underline underline-offset-2"
+                >
+                  {item.product_name} is marked Out of Stock. Relist it?
+                </a>
+              ))}
           </div>
         ) : (
           <div className="space-y-2">

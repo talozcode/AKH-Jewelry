@@ -317,17 +317,19 @@ this section is the living reference. Schema in
 
 Real Stripe Checkout: the site is a working e-commerce store, not a
 reservation-only enquiry funnel (the old reservations feature was
-deleted 2026-09-11 once this shipped; see "CMS" above). "Buy Now" on a
-product page (`PurchaseArea.tsx`) redirects to a **hosted** Stripe
-Checkout Session (`src/lib/actions/checkout.ts`'s
-`createCheckoutSession()`), no `@stripe/stripe-js`/Elements anywhere, the
-browser never loads Stripe.js, it's a pure redirect to `session.url` and
-back. One product (+ selected size) per checkout: **no multi-item cart**
-(`/cart` stays the same placeholder it's always been, deliberately).
+deleted 2026-09-11 once this shipped; see "CMS" above). "Buy Now" and
+"Add to Cart" on a product page (`PurchaseArea.tsx`) both redirect to a
+**hosted** Stripe Checkout Session (`src/lib/actions/checkout.ts`'s
+`createCartCheckoutSession()`), no `@stripe/stripe-js`/Elements anywhere,
+the browser never loads Stripe.js, it's a pure redirect to `session.url`
+and back. **Multi-item checkout was added 2026-09-12** - see "Multi-item
+cart" below; the single-item-only design described in this section's
+original 2026-09-09 build has since changed.
 
 - **`orders` table** (`supabase/migrations/0003_orders.sql`, now the
-  only table holding customer personal data). Snapshot fields
-  (product name/slug/price/currency), flat shipping-address columns, a
+  only table holding customer personal data) is a HEADER row as of the
+  multi-item cart change - product detail moved to `order_items`, see
+  "Multi-item cart" below. Flat shipping-address columns, a
   `stripe_checkout_session_id` unique constraint as the idempotency guard
   against webhook retries, and a `status` (`unfulfilled`/`shipped`;
   fulfillment state, not payment state; a row only ever exists for a
@@ -336,11 +338,12 @@ back. One product (+ selected size) per checkout: **no multi-item cart**
   API Route Handler). Verifies `stripe-signature` against
   `STRIPE_WEBHOOK_SECRET` using the **raw** request body (`req.text()`,
   never `req.json()` first). On `checkout.session.completed`, inserts one
-  `orders` row and, the important business rule, **auto-flips an "In
-  Stock" product to "Out of Stock" the instant payment confirms**, so a
-  physical one-of-one piece can't be sold twice. "Made to Order" pieces
-  are never flipped (no fixed inventory; they go through the exact same
-  instant checkout, lead time is just dispatch-copy messaging).
+  `orders` row plus one `order_items` row per line and, the important
+  business rule, **auto-flips an "In Stock" product to "Out of Stock" the
+  instant payment confirms**, so a physical one-of-one piece can't be
+  sold twice. "Made to Order" pieces are never flipped (no fixed
+  inventory; they go through the exact same instant checkout, lead time
+  is just dispatch-copy messaging).
 - **No shipping fee** (free worldwide shipping, per the user's decision)
   and **no automatic tax** (Stripe Tax off): prices charge exactly as
   shown on the site. A shipping address IS still collected (physical
@@ -1017,6 +1020,96 @@ she'd have no way to do it at all.
   Vercel's encrypted env store, only the developer can see it." Judged
   acceptable for a one-owner boutique shop with no other users, not a
   general recommendation.
+
+## Multi-item cart (built 2026-09-12)
+
+Checkout was single-product-only from 2026-09-09 through 2026-09-12 (see
+the "Checkout / payments" section above, written for that version) - a
+customer could only buy one piece per Stripe session. Changed on explicit
+request so a customer can buy more than one piece at a time, either
+multiple of the same piece or several different ones in one order.
+
+- **`order_items` table** (migration `0012_order_items.sql`): one row per
+  distinct product+size line in a Checkout Session. `orders` is now a
+  header row only (customer, shipping, totals, status) - the per-product
+  columns it used to have (`product_id`/`product_name`/`product_slug`/
+  `product_price`/`product_currency`/`size`) moved to `order_items`, and
+  `oversold` moved there too (a multi-item order can have one line
+  oversold and the rest fine, which an order-wide flag couldn't express).
+  Existing order history (0 rows at the time of this migration) was
+  backfilled as one `order_items` row per order before the old columns
+  were dropped - nothing was lost, it just moved tables. Everywhere that
+  used to read `order.product_name` etc. now reads `order.items[]`
+  (the `OrderWithItems` type in `src/lib/db/orders.ts`).
+- **`src/lib/cart/`**: client-side cart state, `store.ts` (localStorage,
+  `useSyncExternalStore` - same pattern as the admin `ThemeToggle`, needed
+  because reading storage outside React and re-rendering every subscribed
+  component on change needs a real pub-sub) wrapping pure array logic in
+  `logic.ts` (directly tested; the storage/pub-sub glue isn't, matching
+  this repo's stated testing philosophy of testing decisions, not browser
+  glue). No account system exists to attach a server-side cart to, so a
+  cart is necessarily per-browser and ephemeral until checkout.
+- **Checkout building** (`src/lib/checkoutParams.ts`): `checkPurchasable`
+  now also validates `quantity` - an untracked "In Stock" piece (one-of-
+  one, see `decideInventoryEffect`) caps at 1, tracked stock caps at the
+  real count, Made to Order is unbounded by design. `checkCartPurchasable`
+  additionally rejects a cart mixing currencies (a single Stripe Checkout
+  Session can only charge in one currency, and the catalog deliberately
+  mixes ILS/USD per product). `buildCartCheckoutParams` builds one Stripe
+  line item per cart line, quantity passed straight to Stripe rather than
+  pre-multiplied into the price. `productId`/`slug`/`size`/`name` are
+  attached as metadata on each line's `price_data.product_data` - Stripe
+  copies this onto the resulting line item's own `metadata`, which is
+  what lets the webhook (and `/order/success`) reconstruct which internal
+  product each paid line corresponds to, since a Checkout Session's line
+  items aren't included in the `checkout.session.completed` event payload
+  itself and have to be fetched separately via `listLineItems()`.
+- **`createCartCheckoutSession`** (`src/lib/actions/checkout.ts`) replaces
+  the old single-product `createCheckoutSession`. Used by both the cart
+  page's Checkout button (however many lines are in the persisted cart)
+  and `PurchaseArea`'s "Buy Now" (a single-line array, bypassing the
+  persisted cart - "Buy Now" means "just this piece," not "also whatever
+  else is sitting in the cart"). Every line is re-priced and re-validated
+  from the database inside the action, never trusted from the client -
+  duplicate product+size lines are merged (summing quantity) before
+  validation, so a stale client-side merge or a direct call can't
+  under-count against stock/quantity limits by splitting one product
+  across two lines.
+- **Webhook** (`handleCheckoutCompleted` in the Stripe route): fetches
+  line items via `listLineItems()`, inserts the order header, then one
+  `order_items` row per line (product name/slug re-fetched fresh from the
+  database by id for display accuracy, matching the original single-item
+  design's same reasoning; `unit_amount` comes from Stripe's own record
+  of what was actually charged, never re-derived from the product's
+  current price). Inventory effect (`decideInventoryEffect`) runs per
+  item; a tracked-stock line with quantity > 1 calls the existing atomic
+  per-unit `decrement_product_stock` RPC once per unit in a loop, reusing
+  the same race-safe primitive unchanged rather than widening the RPC's
+  signature. A genuinely nice side effect of this rewrite: if a product is
+  deleted between checkout and webhook delivery, the order and its other
+  items are still recorded (that item's `product_id` just goes null via
+  the FK's `on delete set null`) - the old single-item design silently
+  dropped the WHOLE order in this case, a previously-documented gap that
+  no longer applies now that a deleted product only affects its own line.
+- **UI**: `PurchaseArea.tsx` gained a quantity stepper (only shown when
+  more than 1 could ever be bought - hidden entirely for a one-of-one
+  piece) and an "Add to Cart" button alongside "Buy Now". `/cart`
+  (`CartPageClient.tsx`, split from `page.tsx` so the page can still
+  export `metadata` - a "use client" page can't) is a real cart: quantity
+  steppers, remove, a mixed-currency warning that disables checkout, and
+  a Checkout button. `Header.tsx`'s cart icon shows a live item-count
+  badge. `/order/success` now lists every line item bought, not just the
+  first one, and no longer misreads a sized item's Stripe `description`
+  (which holds "Size 54" when a size was set) as the product name.
+- **Admin**: `OrderRow.tsx`/`orders/page.tsx`/the Dashboard's recent-orders
+  list/`PrivacyLookupForm.tsx`'s export all show every item in an order,
+  not just one. The post-refund "relist?" prompt is now per out-of-stock
+  item rather than per order, since a multi-item order can have some
+  items back in stock and others not. `ordersToCsv` emits one CSV row per
+  order item (not per order), with the order's total repeating on every
+  row of that order so a spreadsheet sum still comes out right (summing
+  per-item amounts instead could disagree with Stripe's own total once
+  currency rounding is involved).
 
 ## What's stubbed / explicitly NOT built yet
 

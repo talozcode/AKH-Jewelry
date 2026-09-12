@@ -3,24 +3,59 @@
 import { useState, useTransition } from "react";
 import { Product } from "@/lib/types";
 import { formatPrice } from "@/lib/format";
-import { createCheckoutSession } from "@/lib/actions/checkout";
+import { createCartCheckoutSession } from "@/lib/actions/checkout";
+import { addToCart } from "@/lib/cart/store";
+
+/** How many of this exact piece a customer could plausibly buy in one
+ *  order: an untracked "In Stock" piece is one-of-one (see
+ *  decideInventoryEffect in products.ts), so its ceiling is 1 - there's
+ *  nothing to select, so no quantity stepper shows at all for it. Tracked
+ *  stock caps at the real count; Made to Order is unbounded by design, so
+ *  99 is just a sane UI ceiling, not a real limit (checkPurchasable is
+ *  the actual server-side authority). */
+function maxQuantityFor(product: Pick<Product, "availability" | "stockQuantity">): number {
+  if (product.availability === "Made to Order") return 99;
+  if (product.availability === "In Stock" && product.stockQuantity) return product.stockQuantity;
+  return 1;
+}
 
 export function PurchaseArea({ product, contactEmail = "hello@akhjewelry.com" }: { product: Product; contactEmail?: string }) {
   const [size, setSize] = useState(product.availableSizes?.[0] ?? "");
+  const [quantity, setQuantity] = useState(1);
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [added, setAdded] = useState(false);
   const disabled = product.availability === "Out of Stock";
+  const maxQuantity = maxQuantityFor(product);
 
   function handleBuyNow() {
     setError(null);
     startTransition(async () => {
-      const result = await createCheckoutSession(product.id!, size || undefined);
+      const result = await createCartCheckoutSession([{ productId: product.id!, size: size || undefined, quantity }]);
       if (!result.ok) {
         setError(result.error);
         return;
       }
       window.location.href = result.url;
     });
+  }
+
+  function handleAddToCart() {
+    setError(null);
+    addToCart(
+      {
+        productId: product.id!,
+        slug: product.slug,
+        name: product.name,
+        price: product.price,
+        currency: product.currency,
+        image: product.images[0],
+        size: size || undefined,
+      },
+      quantity
+    );
+    setAdded(true);
+    setTimeout(() => setAdded(false), 2000);
   }
 
   return (
@@ -49,6 +84,33 @@ export function PurchaseArea({ product, contactEmail = "hello@akhjewelry.com" }:
         </div>
       ) : null}
 
+      {!disabled && maxQuantity > 1 ? (
+        <div className="mb-5">
+          <label className="mb-2 block text-xs uppercase tracking-[0.1em] text-ink/60">Quantity</label>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+              disabled={quantity <= 1}
+              aria-label="Decrease quantity"
+              className="flex h-10 w-10 items-center justify-center border border-ink/25 text-ink transition hover:border-ink disabled:opacity-30"
+            >
+              -
+            </button>
+            <span className="w-6 text-center text-sm">{quantity}</span>
+            <button
+              type="button"
+              onClick={() => setQuantity((q) => Math.min(maxQuantity, q + 1))}
+              disabled={quantity >= maxQuantity}
+              aria-label="Increase quantity"
+              className="flex h-10 w-10 items-center justify-center border border-ink/25 text-ink transition hover:border-ink disabled:opacity-30"
+            >
+              +
+            </button>
+          </div>
+        </div>
+      ) : null}
+
       <button
         disabled={disabled || pending}
         onClick={handleBuyNow}
@@ -56,6 +118,18 @@ export function PurchaseArea({ product, contactEmail = "hello@akhjewelry.com" }:
       >
         {disabled ? "Out of Stock" : pending ? "Redirecting to checkout…" : "Buy Now"}
       </button>
+
+      {!disabled ? (
+        <button
+          type="button"
+          onClick={handleAddToCart}
+          disabled={pending}
+          className="mt-3 block w-full border border-charcoal py-3.5 text-center text-sm uppercase tracking-[0.14em] text-charcoal transition hover:bg-charcoal hover:text-ivory disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          {added ? "Added to cart" : "Add to Cart"}
+        </button>
+      ) : null}
+
       {error ? <p className="mt-2 text-sm text-red-700">{error}</p> : null}
 
       <a

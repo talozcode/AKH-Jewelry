@@ -125,12 +125,6 @@ export type Database = {
       orders: {
         Row: {
           id: string;
-          product_id: string | null;
-          product_name: string;
-          product_slug: string;
-          product_price: number;
-          product_currency: string;
-          size: string | null;
           customer_name: string;
           customer_email: string;
           shipping_line1: string;
@@ -147,7 +141,6 @@ export type Database = {
           stripe_refund_id: string | null;
           refunded_at: string | null;
           amount_refunded: number;
-          oversold: boolean;
           anonymized_at: string | null;
           created_at: string;
           updated_at: string;
@@ -155,10 +148,6 @@ export type Database = {
         Insert: Partial<Database["public"]["Tables"]["orders"]["Row"]> &
           Pick<
             Database["public"]["Tables"]["orders"]["Row"],
-            | "product_name"
-            | "product_slug"
-            | "product_price"
-            | "product_currency"
             | "customer_name"
             | "customer_email"
             | "shipping_line1"
@@ -170,9 +159,34 @@ export type Database = {
             | "currency"
           >;
         Update: Partial<Database["public"]["Tables"]["orders"]["Row"]>;
+        Relationships: [];
+      };
+      order_items: {
+        Row: {
+          id: string;
+          order_id: string;
+          product_id: string | null;
+          product_name: string;
+          product_slug: string;
+          unit_amount: number;
+          size: string | null;
+          quantity: number;
+          oversold: boolean;
+          created_at: string;
+        };
+        Insert: Partial<Database["public"]["Tables"]["order_items"]["Row"]> &
+          Pick<Database["public"]["Tables"]["order_items"]["Row"], "order_id" | "product_name" | "product_slug" | "unit_amount">;
+        Update: Partial<Database["public"]["Tables"]["order_items"]["Row"]>;
         Relationships: [
           {
-            foreignKeyName: "orders_product_id_fkey";
+            foreignKeyName: "order_items_order_id_fkey";
+            columns: ["order_id"];
+            isOneToOne: false;
+            referencedRelation: "orders";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "order_items_product_id_fkey";
             columns: ["product_id"];
             isOneToOne: false;
             referencedRelation: "products";

@@ -1,11 +1,22 @@
 import { supabaseAdmin } from "../supabase/server";
 import type { Database } from "../supabase/database.types";
-import type { Product } from "../types";
 import type Stripe from "stripe";
 
 export type Order = Database["public"]["Tables"]["orders"]["Row"];
+export type OrderItem = Database["public"]["Tables"]["order_items"]["Row"];
 export type OrderStatus = Order["status"];
 export type NewOrderRow = Database["public"]["Tables"]["orders"]["Insert"];
+export type NewOrderItemRow = Database["public"]["Tables"]["order_items"]["Insert"];
+
+/**
+ * An order together with the products/quantities/sizes bought in it -
+ * introduced when checkout became multi-item (an order used to just BE a
+ * single product row; now product detail lives in the child `order_items`
+ * table, one row per distinct product+size line, see migration
+ * 0012_order_items.sql). Everywhere that used to read `order.product_name`
+ * etc. directly now reads `order.items`.
+ */
+export type OrderWithItems = Order & { items: OrderItem[] };
 
 /**
  * The subset of statuses `updateOrderStatus` will accept. `refunded` is
@@ -17,14 +28,25 @@ export type NewOrderRow = Database["public"]["Tables"]["orders"]["Insert"];
  */
 export type SettableOrderStatus = Exclude<OrderStatus, "refunded">;
 
+function csvField(value: string): string {
+  // RFC 4180: quote a field if it contains a comma, quote, or newline;
+  // double any quote inside it. Every field is quoted-if-needed
+  // independently - safe for customer/product names/addresses, which are
+  // free text and can contain any of those characters.
+  if (/[",\n]/.test(value)) return `"${value.replace(/"/g, '""')}"`;
+  return value;
+}
+
 const CSV_COLUMNS = [
   "Date",
   "Order ID",
   "Product",
   "Size",
+  "Quantity",
   "Customer name",
   "Customer email",
-  "Amount",
+  "Item amount",
+  "Order total",
   "Currency",
   "Refunded",
   "Status",
@@ -36,69 +58,94 @@ const CSV_COLUMNS = [
   "Country",
 ] as const;
 
-function csvField(value: string): string {
-  // RFC 4180: quote a field if it contains a comma, quote, or newline;
-  // double any quote inside it. Every field is quoted-if-needed
-  // independently - safe for customer/product names/addresses, which are
-  // free text and can contain any of those characters.
-  if (/[",\n]/.test(value)) return `"${value.replace(/"/g, '""')}"`;
-  return value;
-}
-
 /**
  * Formats orders as CSV for the owner's own bookkeeping/tax filing - the
  * only export previously available was the GDPR data-subject export
  * (exportPersonalData in ./privacy.ts), scoped to one customer's email at
- * a time, not a general ledger. Amounts are converted from Stripe's
- * smallest-currency-unit integers to decimal (matching what she sees on
- * screen), not summed across currencies (see getRevenueByCurrency's same
- * reasoning) - each row keeps its own order's actual currency.
+ * a time, not a general ledger. One row per order ITEM, not per order,
+ * since a multi-item order needs its products broken out for real
+ * inventory/accounting use - "Order total" repeats on every row of the
+ * same order so a spreadsheet formula can still sum it correctly (summing
+ * "Item amount" instead double-counts an order's shipping/rounding
+ * remainder, since Stripe's amount_total isn't guaranteed to exactly equal
+ * the sum of unit_amount * quantity once currency rounding is involved).
  */
-export function ordersToCsv(orders: Order[]): string {
-  const rows = orders.map((o) =>
-    [
-      new Date(o.created_at).toISOString().slice(0, 10),
-      o.id,
-      o.product_name,
-      o.size ?? "",
-      o.customer_name,
-      o.customer_email,
-      (o.amount_total / 100).toFixed(2),
-      o.currency,
-      (o.amount_refunded / 100).toFixed(2),
-      o.status,
-      o.oversold ? "yes" : "",
-      [o.shipping_line1, o.shipping_line2].filter(Boolean).join(", "),
-      o.shipping_city,
-      o.shipping_state ?? "",
-      o.shipping_postal_code,
-      o.shipping_country,
-    ]
-      .map(csvField)
-      .join(",")
-  );
+export function ordersToCsv(orders: OrderWithItems[]): string {
+  const rows: string[] = [];
+  for (const o of orders) {
+    const items = o.items.length > 0 ? o.items : [null];
+    for (const item of items) {
+      rows.push(
+        [
+          new Date(o.created_at).toISOString().slice(0, 10),
+          o.id,
+          item?.product_name ?? "",
+          item?.size ?? "",
+          item ? String(item.quantity) : "",
+          o.customer_name,
+          o.customer_email,
+          item ? ((item.unit_amount * item.quantity) / 100).toFixed(2) : "",
+          (o.amount_total / 100).toFixed(2),
+          o.currency,
+          (o.amount_refunded / 100).toFixed(2),
+          o.status,
+          item?.oversold ? "yes" : "",
+          [o.shipping_line1, o.shipping_line2].filter(Boolean).join(", "),
+          o.shipping_city,
+          o.shipping_state ?? "",
+          o.shipping_postal_code,
+          o.shipping_country,
+        ]
+          .map(csvField)
+          .join(",")
+      );
+    }
+  }
   return [CSV_COLUMNS.join(","), ...rows].join("\n");
 }
 
-export async function getOrders(filters?: { status?: OrderStatus }): Promise<Order[]> {
+async function attachItems(orders: Order[]): Promise<OrderWithItems[]> {
+  if (orders.length === 0) return [];
+  const { data, error } = await supabaseAdmin()
+    .from("order_items")
+    .select("*")
+    .in(
+      "order_id",
+      orders.map((o) => o.id)
+    );
+  if (error) throw new Error(`attachItems: ${error.message}`);
+  const byOrderId = new Map<string, OrderItem[]>();
+  for (const item of data ?? []) {
+    const list = byOrderId.get(item.order_id) ?? [];
+    list.push(item);
+    byOrderId.set(item.order_id, list);
+  }
+  return orders.map((o) => ({ ...o, items: byOrderId.get(o.id) ?? [] }));
+}
+
+export async function getOrders(filters?: { status?: OrderStatus }): Promise<OrderWithItems[]> {
   let query = supabaseAdmin().from("orders").select("*").order("created_at", { ascending: false });
   if (filters?.status) query = query.eq("status", filters.status);
   const { data, error } = await query;
   if (error) throw new Error(`getOrders: ${error.message}`);
-  return data ?? [];
+  return attachItems(data ?? []);
 }
 
-export async function getOrderById(id: string): Promise<Order | undefined> {
+export async function getOrderById(id: string): Promise<OrderWithItems | undefined> {
   const { data, error } = await supabaseAdmin().from("orders").select("*").eq("id", id).maybeSingle();
   if (error) throw new Error(`getOrderById: ${error.message}`);
-  return data ?? undefined;
+  if (!data) return undefined;
+  const [withItems] = await attachItems([data]);
+  return withItems;
 }
 
 /** Find the order a refund/dispute event is about, by Stripe payment intent. */
-export async function getOrderByPaymentIntentId(paymentIntentId: string): Promise<Order | undefined> {
+export async function getOrderByPaymentIntentId(paymentIntentId: string): Promise<OrderWithItems | undefined> {
   const { data, error } = await supabaseAdmin().from("orders").select("*").eq("stripe_payment_intent_id", paymentIntentId).maybeSingle();
   if (error) throw new Error(`getOrderByPaymentIntentId: ${error.message}`);
-  return data ?? undefined;
+  if (!data) return undefined;
+  const [withItems] = await attachItems([data]);
+  return withItems;
 }
 
 export async function getOrderCountsByStatus(): Promise<Record<OrderStatus, number>> {
@@ -110,16 +157,18 @@ export async function getOrderCountsByStatus(): Promise<Record<OrderStatus, numb
 }
 
 /**
- * Count of orders flagged oversold (see markOrderOversold below). Used for
- * the Dashboard card - previously this flag only ever showed as a badge on
- * the individual order row in /admin/orders, which meant it was invisible
- * unless the owner happened to read every row closely. It's rare (only
- * fires on a genuine concurrent-buyer race for the last tracked unit) but
- * high-stakes when it happens (a customer paid for a piece that doesn't
- * exist), so it now surfaces on the page she actually opens by default.
+ * Count of order ITEMS flagged oversold (moved from an order-level flag,
+ * see migration 0012_order_items.sql - a multi-item order can have one
+ * line oversold and the rest fine). Used for the Dashboard banner -
+ * previously this only ever showed as a badge on the individual order row
+ * in /admin/orders, invisible unless the owner happened to read every row
+ * closely. Rare (only fires on a genuine concurrent-buyer race for the
+ * last tracked unit) but high-stakes when it happens (a customer paid for
+ * a piece that doesn't exist), so it now surfaces on the page she opens by
+ * default.
  */
 export async function getOversoldCount(): Promise<number> {
-  const { count, error } = await supabaseAdmin().from("orders").select("id", { count: "exact", head: true }).eq("oversold", true);
+  const { count, error } = await supabaseAdmin().from("order_items").select("id", { count: "exact", head: true }).eq("oversold", true);
   if (error) throw new Error(`getOversoldCount: ${error.message}`);
   return count ?? 0;
 }
@@ -132,6 +181,9 @@ export async function getOversoldCount(): Promise<number> {
  * total. Subtracting amount_refunded here is the only place refunds affect
  * "revenue": a refunded order otherwise stays a normal row (see
  * getOrderCountsByStatus's separate `refunded` bucket for order counts).
+ * Unaffected by the move to multi-item orders: amount_total/amount_refunded/
+ * currency all stay on the order header, one Checkout Session = one charge
+ * regardless of how many line items it contains.
  */
 export async function getRevenueByCurrency(): Promise<Record<string, number>> {
   const { data, error } = await supabaseAdmin().from("orders").select("amount_total, amount_refunded, currency");
@@ -142,13 +194,13 @@ export async function getRevenueByCurrency(): Promise<Record<string, number>> {
 }
 
 /**
- * Flags an order whose tracked-inventory decrement returned null: the
- * customer already paid by the time this runs, so the webhook must never
- * throw here, only record it for the owner to see on `/admin/orders`.
+ * Flags a specific order item whose tracked-inventory decrement returned
+ * null: the customer already paid by the time this runs, so the webhook
+ * must never throw here, only record it for the owner to see.
  */
-export async function markOrderOversold(id: string): Promise<void> {
-  const { error } = await supabaseAdmin().from("orders").update({ oversold: true }).eq("id", id);
-  if (error) throw new Error(`markOrderOversold: ${error.message}`);
+export async function markOrderItemOversold(itemId: string): Promise<void> {
+  const { error } = await supabaseAdmin().from("order_items").update({ oversold: true }).eq("id", itemId);
+  if (error) throw new Error(`markOrderItemOversold: ${error.message}`);
 }
 
 /** Admin only - call `requireAdminAction()` before this. */
@@ -194,10 +246,12 @@ export function canRefund(order: Pick<Order, "status" | "stripe_payment_intent_i
 }
 
 /**
- * Pure mapping from a completed Checkout Session to the row the webhook
- * inserts. Extracted specifically because every shipping/customer field
- * here is NOT NULL on the `orders` table, so a missing value has to become
- * `""` (or `null` where the column allows it), never `undefined` - an
+ * Pure mapping from a completed Checkout Session to the order HEADER row
+ * the webhook inserts (customer, shipping, totals - no product detail,
+ * that's built separately into `order_items` rows from Stripe's line
+ * items, see the webhook route). Every shipping/customer field here is
+ * NOT NULL on the `orders` table, so a missing value has to become `""`
+ * (or `null` where the column allows it), never `undefined` - an
  * `undefined` value in a Supabase insert is dropped from the request body
  * entirely rather than sent as null, which would have silently violated a
  * NOT NULL constraint on a session missing shipping details (a live crash
@@ -205,18 +259,10 @@ export function canRefund(order: Pick<Order, "status" | "stripe_payment_intent_i
  * details are present on every completed session shape).
  */
 export function sessionToOrderRow(
-  session: Pick<Stripe.Checkout.Session, "id" | "payment_intent" | "customer_details" | "collected_information" | "amount_total" | "currency">,
-  product: Pick<Product, "id" | "name" | "slug" | "price" | "currency">,
-  size: string | null
+  session: Pick<Stripe.Checkout.Session, "id" | "payment_intent" | "customer_details" | "collected_information" | "amount_total" | "currency">
 ): NewOrderRow {
   const shipping = session.collected_information?.shipping_details;
   return {
-    product_id: product.id,
-    product_name: product.name,
-    product_slug: product.slug,
-    product_price: product.price,
-    product_currency: product.currency,
-    size,
     customer_name: session.customer_details?.name ?? "",
     customer_email: session.customer_details?.email ?? "",
     shipping_line1: shipping?.address.line1 ?? "",
@@ -228,7 +274,7 @@ export function sessionToOrderRow(
     stripe_checkout_session_id: session.id,
     stripe_payment_intent_id: typeof session.payment_intent === "string" ? session.payment_intent : null,
     amount_total: session.amount_total ?? 0,
-    currency: (session.currency ?? product.currency).toUpperCase(),
+    currency: (session.currency ?? "ils").toUpperCase(),
   };
 }
 

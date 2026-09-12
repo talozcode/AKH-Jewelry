@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { useCart } from "@/lib/cart/store";
 
 const NAV = [
   { href: "/shop", label: "Shop" },
@@ -12,6 +13,7 @@ const NAV = [
 
 export function Header() {
   const [open, setOpen] = useState(false);
+  const { totalCount } = useCart();
 
   return (
     <header className="sticky top-0 z-50 border-b border-ink/10 bg-ivory/90 backdrop-blur">
@@ -51,8 +53,13 @@ export function Header() {
           <button aria-label="Account" className="hidden text-ink/70 transition hover:text-copper sm:block">
             <UserIcon />
           </button>
-          <Link href="/cart" aria-label="Cart" className="relative -m-2 p-2 text-ink/70 transition hover:text-copper">
+          <Link href="/cart" aria-label={`Cart${totalCount > 0 ? `, ${totalCount} item${totalCount === 1 ? "" : "s"}` : ""}`} className="relative -m-2 p-2 text-ink/70 transition hover:text-copper">
             <BagIcon />
+            {totalCount > 0 ? (
+              <span className="absolute right-0.5 top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-copper px-1 text-[10px] font-medium leading-none text-ivory">
+                {totalCount}
+              </span>
+            ) : null}
           </Link>
           <button
             aria-label="Open menu"
@@ -81,7 +88,7 @@ export function Header() {
               Search
             </Link>
             <Link href="/cart" onClick={() => setOpen(false)} className="py-3 text-base tracking-wide">
-              Cart
+              Cart{totalCount > 0 ? ` (${totalCount})` : ""}
             </Link>
           </nav>
         </div>

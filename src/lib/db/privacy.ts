@@ -1,5 +1,5 @@
 import { supabaseAdmin } from "../supabase/server";
-import type { Order } from "./orders";
+import { getOrders, type Order, type OrderWithItems } from "./orders";
 
 /**
  * Backs the data-rights promises in the Privacy Policy (access, export,
@@ -25,22 +25,24 @@ import type { Order } from "./orders";
 
 export type PersonalDataSummary = {
   email: string;
-  orders: Order[];
+  orders: OrderWithItems[];
 };
 
 function matchesEmail(order: Order, email: string): boolean {
   return order.customer_email.trim().toLowerCase() === email.trim().toLowerCase();
 }
 
-/** Every order (anonymized or not) tied to this email, most recent first. */
+/** Every order (anonymized or not) tied to this email, most recent first,
+ *  each with its line items attached - what she bought is part of what
+ *  the Privacy Policy promises to show/export, not just the order
+ *  metadata around it. */
 export async function findPersonalDataByEmail(email: string): Promise<PersonalDataSummary> {
-  const { data, error } = await supabaseAdmin().from("orders").select("*").order("created_at", { ascending: false });
-  if (error) throw new Error(`findPersonalDataByEmail: ${error.message}`);
-  return { email, orders: (data ?? []).filter((order) => matchesEmail(order, email)) };
+  const allOrders = await getOrders();
+  return { email, orders: allOrders.filter((order) => matchesEmail(order, email)) };
 }
 
 /** GDPR Art. 20-style structured export: JSON, not CSV, since order shape isn't flat. */
-export async function exportPersonalData(email: string): Promise<{ email: string; exportedAt: string; orders: Order[] }> {
+export async function exportPersonalData(email: string): Promise<{ email: string; exportedAt: string; orders: OrderWithItems[] }> {
   const summary = await findPersonalDataByEmail(email);
   return { email, exportedAt: new Date().toISOString(), orders: summary.orders };
 }

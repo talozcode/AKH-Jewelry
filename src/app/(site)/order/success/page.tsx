@@ -9,6 +9,9 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
+type LineSummary = { name: string; size: string | null; quantity: number };
+type OrderSummary = { lines: LineSummary[]; amount: number; currency: string; email: string | null };
+
 export default async function OrderSuccessPage({
   searchParams,
 }: {
@@ -19,16 +22,22 @@ export default async function OrderSuccessPage({
   // Read directly from Stripe, not from our own `orders` table - the
   // webhook that writes that row is async and may not have run yet by
   // the time the browser lands here. This is independent of that timing.
-  let summary: { name: string; amount: number; currency: string; email: string | null } | null = null;
+  let summary: OrderSummary | null = null;
   if (session_id) {
     try {
       const stripe = await stripeClient();
-      const session = await stripe.checkout.sessions.retrieve(session_id, {
-        expand: ["line_items"],
-      });
-      const item = session.line_items?.data[0];
+      const session = await stripe.checkout.sessions.retrieve(session_id);
+      const lineItems = await stripe.checkout.sessions.listLineItems(session_id);
       summary = {
-        name: item?.description ?? "Your piece",
+        lines: lineItems.data.map((item) => ({
+          // Product name, not item.description - description holds the
+          // size string when one was set (see buildCartCheckoutParams),
+          // so it's the wrong field for "which piece is this" once a
+          // sized item is in the order.
+          name: item.metadata?.name || "Your piece",
+          size: item.metadata?.size || null,
+          quantity: item.quantity ?? 1,
+        })),
         amount: (session.amount_total ?? 0) / 100,
         currency: (session.currency ?? "ils").toUpperCase(),
         email: session.customer_details?.email ?? null,
@@ -49,8 +58,16 @@ export default async function OrderSuccessPage({
       {summary ? (
         <div className="mt-8 inline-block border border-ink/15 px-8 py-6 text-left">
           <p className="text-sm text-ink/50">Order summary</p>
-          <p className="mt-2 font-display text-lg">{summary.name}</p>
-          <p className="mt-1 text-sm text-ink/70">
+          <ul className="mt-2 space-y-1">
+            {summary.lines.map((line, i) => (
+              <li key={i} className="font-display text-lg">
+                {line.name}
+                {line.size ? `, size ${line.size}` : ""}
+                {line.quantity > 1 ? ` ×${line.quantity}` : ""}
+              </li>
+            ))}
+          </ul>
+          <p className="mt-3 text-sm text-ink/70">
             {summary.currency === "ILS" ? "₪" : summary.currency === "USD" ? "$" : summary.currency + " "}
             {summary.amount.toLocaleString()}
           </p>

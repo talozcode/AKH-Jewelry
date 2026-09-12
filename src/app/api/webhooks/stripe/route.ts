@@ -1,7 +1,14 @@
 import { stripeClient } from "@/lib/stripe";
 import { resolveStripeWebhookSecret } from "@/lib/stripeSettings";
 import { decideInventoryEffect, getProductById, setProductAvailability } from "@/lib/products";
-import { getOrderByPaymentIntentId, isDuplicateSessionError, markOrderOversold, refundOrder, sessionToOrderRow } from "@/lib/db/orders";
+import {
+  getOrderByPaymentIntentId,
+  isDuplicateSessionError,
+  markOrderItemOversold,
+  refundOrder,
+  sessionToOrderRow,
+  type NewOrderItemRow,
+} from "@/lib/db/orders";
 import { supabaseAdmin } from "@/lib/supabase/server";
 import type Stripe from "stripe";
 
@@ -104,27 +111,25 @@ async function handleRefundEvent(eventType: string, refund: Stripe.Refund) {
   await refundOrder(order.id, { stripeRefundId: refund.id, amountRefunded: refund.amount });
 }
 
+/**
+ * A Checkout Session's line items aren't included in the
+ * `checkout.session.completed` event payload itself, so they're fetched
+ * separately here. `productId`/`slug`/`size` come back on each line
+ * item's own `metadata` because buildCartCheckoutParams() (checkoutParams.ts)
+ * sets them on `price_data.product_data.metadata` at session-creation
+ * time - Stripe copies that onto the resulting line item, no `expand`
+ * needed to read it back.
+ */
 async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
-  const productId = session.metadata?.productId;
-  const size = session.metadata?.size || null;
-  if (!productId) {
-    console.error("stripe webhook: session missing productId metadata", session.id);
+  const stripe = await stripeClient();
+  const lineItems = await stripe.checkout.sessions.listLineItems(session.id);
+
+  if (lineItems.data.length === 0) {
+    console.error("stripe webhook: session has no line items", session.id);
     return;
   }
 
-  // Fetch the product fresh - never trust old metadata for price/name in
-  // case it changed between checkout creation and payment confirmation.
-  const product = await getProductById(productId);
-  if (!product) {
-    console.error("stripe webhook: product no longer exists", productId, session.id);
-    return;
-  }
-
-  const { data: insertedOrder, error } = await supabaseAdmin()
-    .from("orders")
-    .insert(sessionToOrderRow(session, product, size))
-    .select("id")
-    .single();
+  const { data: insertedOrder, error } = await supabaseAdmin().from("orders").insert(sessionToOrderRow(session)).select("id").single();
 
   if (error) {
     if (isDuplicateSessionError(error)) {
@@ -135,33 +140,86 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     throw new Error(`orders insert failed: ${error.message}`);
   }
 
-  // See decideInventoryEffect's own doc comment for the full truth table.
-  const effect = decideInventoryEffect(product);
-
-  if (effect === "flip_to_out_of_stock") {
-    // Untracked one-of-one: flip the instant payment confirms, so the same
-    // physical piece can't be sold twice. setProductAvailability (not
-    // updateProduct(id, {...product, availability})) so a concurrent admin
-    // edit to this product isn't silently clobbered by a stale full-row
-    // write.
-    await setProductAvailability(product.id!, "Out of Stock");
-  } else if (effect === "decrement") {
-    // Tracked inventory: atomic per-unit decrement, not a read-then-write,
-    // so two concurrent payments for the last unit can't both succeed (see
-    // the migration's own comment for the concurrency argument in full).
-    const { data: newQty, error: rpcError } = await supabaseAdmin().rpc("decrement_product_stock", {
-      p_product_id: product.id!,
+  const itemRows: NewOrderItemRow[] = [];
+  for (const li of lineItems.data) {
+    const productId = li.metadata?.productId || null;
+    const size = li.metadata?.size || null;
+    // Fetch fresh, never trust old metadata for the display name - if the
+    // product's been deleted or renamed since checkout, this order should
+    // still reflect what's true now, falling back to whatever Stripe
+    // recorded (its line-item description, which defaults to the name
+    // given at session-creation time) only if the product is gone
+    // entirely. unit_amount comes from Stripe's own record of what was
+    // actually charged, never re-derived from the product's current
+    // price, which could have changed since.
+    const product = productId ? await getProductById(productId) : undefined;
+    itemRows.push({
+      order_id: insertedOrder.id,
+      product_id: productId,
+      product_name: product?.name ?? li.description ?? "Unknown item",
+      product_slug: product?.slug ?? li.metadata?.slug ?? "",
+      unit_amount: li.price?.unit_amount ?? 0,
+      size,
+      quantity: li.quantity ?? 1,
     });
-    if (rpcError) throw new Error(`decrement_product_stock failed: ${rpcError.message}`);
+  }
 
-    if (newQty === null) {
-      // The customer already paid by the time this runs, so this must
-      // never throw: log loudly and flag it for the owner on
-      // /admin/orders rather than pretend nothing went wrong.
-      console.error("stripe webhook: OVERSOLD", product.id, session.id);
-      await markOrderOversold(insertedOrder.id);
-    } else if (newQty === 0) {
+  const { data: insertedItems, error: itemsError } = await supabaseAdmin()
+    .from("order_items")
+    .insert(itemRows)
+    .select("id, product_id, quantity");
+  if (itemsError) throw new Error(`order_items insert failed: ${itemsError.message}`);
+
+  for (const item of insertedItems ?? []) {
+    if (!item.product_id) continue; // product deleted/never resolved - order/item still recorded, just nothing to decrement
+
+    const product = await getProductById(item.product_id);
+    if (!product) {
+      console.error("stripe webhook: product no longer exists", item.product_id, session.id);
+      continue;
+    }
+
+    // See decideInventoryEffect's own doc comment for the full truth table.
+    const effect = decideInventoryEffect(product);
+
+    if (effect === "flip_to_out_of_stock") {
+      // Untracked one-of-one: flip the instant payment confirms, so the
+      // same physical piece can't be sold twice. setProductAvailability
+      // (not updateProduct(id, {...product, availability})) so a
+      // concurrent admin edit to this product isn't silently clobbered by
+      // a stale full-row write.
       await setProductAvailability(product.id!, "Out of Stock");
+    } else if (effect === "decrement") {
+      // Tracked inventory: the existing atomic per-unit RPC, called once
+      // per unit in this line (quantity > 1 is a new possibility with
+      // multi-item carts) rather than widening the RPC to decrement by N -
+      // reuses the exact same race-safe primitive unchanged. Stops at the
+      // first failure/zero rather than looping past it: once stock hits 0
+      // or oversells, further iterations for the same line would just
+      // repeat the same outcome.
+      let oversold = false;
+      for (let i = 0; i < item.quantity; i++) {
+        const { data: newQty, error: rpcError } = await supabaseAdmin().rpc("decrement_product_stock", {
+          p_product_id: product.id!,
+        });
+        if (rpcError) throw new Error(`decrement_product_stock failed: ${rpcError.message}`);
+
+        if (newQty === null) {
+          oversold = true;
+          break;
+        }
+        if (newQty === 0) {
+          await setProductAvailability(product.id!, "Out of Stock");
+          break;
+        }
+      }
+      if (oversold) {
+        // The customer already paid by the time this runs, so this must
+        // never throw: log loudly and flag it for the owner on
+        // /admin/orders rather than pretend nothing went wrong.
+        console.error("stripe webhook: OVERSOLD", product.id, session.id);
+        await markOrderItemOversold(item.id);
+      }
     }
   }
 }

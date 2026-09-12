@@ -108,7 +108,7 @@ export default async function AdminDashboardPage() {
                 {recentOrders.map((o) => (
                   <li key={o.id} className="flex items-center justify-between border-b border-[var(--admin-border)] py-2 text-sm last:border-0">
                     <span className="text-[var(--admin-text)]/80">
-                      {o.customer_name}, {o.product_name}
+                      {o.customer_name}, {o.items.map((item) => item.product_name).join(", ") || "no items"}
                     </span>
                     <span className="rounded-full bg-[var(--admin-surface-2)] px-2 py-0.5 text-xs font-medium text-[var(--admin-text-muted)]">
                       {o.status}
