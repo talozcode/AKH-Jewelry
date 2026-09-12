@@ -62,9 +62,28 @@ export const getAllProductsForAdmin = cache(async function getAllProductsForAdmi
   return (data ?? []).map(rowToProduct);
 });
 
+/**
+ * Storefront-only lookup: filters `is_published` exactly like getProducts/
+ * getFeaturedProducts/getHeroProduct do, unlike getProductById (used only
+ * by the admin, which legitimately needs to see drafts). Before this
+ * filter existed, a draft/unpublished product's full page - name, photos,
+ * price, story, and a live-looking Buy button - was fully public and
+ * crawlable to anyone who had or guessed its slug, even though checkout
+ * itself was always safely rejected server-side by checkPurchasable.
+ */
 export const getProductBySlug = cache(async function getProductBySlug(slug: string): Promise<Product | undefined> {
-  const { data, error } = await supabaseAdmin().from("products").select("*").eq("slug", slug).maybeSingle();
-  if (error) throw new Error(`getProductBySlug: ${error.message}`);
+  const { data, error } = await supabaseAdmin().from("products").select("*").eq("slug", slug).eq("is_published", true).maybeSingle();
+  // Unlike every other lookup in this file, `slug` here is a raw, fully
+  // attacker-controlled route param (e.g. /product/OR1=1 reliably makes
+  // PostgREST return a query error, confirmed live). A real infra failure
+  // and an adversarial slug look identical to the caller either way, and
+  // a visitor-facing product page should 404 on either rather than crash
+  // with an unhandled exception (this app has no error boundary anywhere)
+  // - logged loudly so a real outage is still visible in server logs.
+  if (error) {
+    console.error(`getProductBySlug(${slug}) failed:`, error.message);
+    return undefined;
+  }
   return data ? rowToProduct(data) : undefined;
 });
 

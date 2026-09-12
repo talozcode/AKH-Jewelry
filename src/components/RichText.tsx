@@ -4,9 +4,11 @@
  * policies and offer a `mailto:` without ever risking stored HTML.
  *
  * Deliberately NOT `dangerouslySetInnerHTML`: the admin is a single shared
- * password with no 2FA and no rate limiting (see src/lib/admin/auth.ts), so
- * storing raw HTML would turn an admin credential leak into stored XSS on a
- * page linked from the footer of every storefront page. Everything here
+ * password with no 2FA (login attempts ARE rate-limited, see
+ * src/lib/admin/rateLimit.ts, but that doesn't stop a leaked credential
+ * from being used directly), so storing raw HTML would turn an admin
+ * credential leak into stored XSS on a page linked from the footer of
+ * every storefront page. Everything here
  * that isn't a matched `[text](url)` pair renders as a plain React text
  * node, so React escapes it and it can never emit a tag.
  *

@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { getProductBySlug, getProducts, getRelated } from "@/lib/products";
 import { getSiteSettings } from "@/lib/site-settings";
 import { formatPrice } from "@/lib/format";
+import { jsonLdScript } from "@/lib/jsonLd";
 import { Gallery } from "@/components/Gallery";
 import { PurchaseArea, StickyMobileBar } from "@/components/PurchaseArea";
 import { Accordion } from "@/components/Accordion";
@@ -68,8 +69,8 @@ export default async function ProductPage(props: PageProps<"/product/[slug]">) {
 
   return (
     <div className="pb-24 md:pb-0">
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdScript(jsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdScript(breadcrumbLd) }} />
 
       <nav className="mx-auto max-w-7xl px-4 pt-6 text-xs text-ink/50 sm:px-6 lg:px-8">
         <Link href="/shop" className="hover:text-copper">Shop</Link>

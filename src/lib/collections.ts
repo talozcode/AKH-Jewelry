@@ -55,7 +55,15 @@ export const getAllCollectionsForAdmin = cache(async function getAllCollectionsF
 
 export const getCollectionBySlug = cache(async function getCollectionBySlug(slug: string): Promise<Collection | undefined> {
   const { data, error } = await supabaseAdmin().from("collections").select("*").eq("slug", slug).maybeSingle();
-  if (error) throw new Error(`getCollectionBySlug: ${error.message}`);
+  // `slug` is a raw, fully attacker-controlled route param (see the
+  // matching comment on getProductBySlug in lib/products.ts, which this
+  // mirrors) - a malformed value can make PostgREST return a query error,
+  // confirmed live against /product/[slug]; treated as not-found rather
+  // than an unhandled 500, logged so a real outage stays visible.
+  if (error) {
+    console.error(`getCollectionBySlug(${slug}) failed:`, error.message);
+    return undefined;
+  }
   return data ? rowToCollection(data) : undefined;
 });
 

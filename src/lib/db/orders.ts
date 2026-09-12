@@ -230,13 +230,25 @@ export async function updateOrderStatus(id: string, status: SettableOrderStatus)
 
 /**
  * The only path that can set status to 'refunded'. Callers (the refund
- * Server Action, and the webhook's refund.updated handler for refunds
- * issued directly from the Stripe Dashboard) must already have a real
- * Stripe refund id and amount in hand before calling this - it's a pure
- * DB write, not where the actual Stripe API call happens.
+ * Server Action, and the webhook's refund.* handler for refunds issued
+ * directly from the Stripe Dashboard) must already have a real Stripe
+ * refund id and amount in hand before calling this - it's a pure DB
+ * write, not where the actual Stripe API call happens.
+ *
+ * `.is("stripe_refund_id", null)` makes this an atomic
+ * check-then-write: refundOrderAction (the in-app button) and this
+ * webhook route are two independent request paths that can both reach
+ * this function for the SAME refund (Stripe can fire refund.created the
+ * instant the admin action's own stripe.refunds.create() call returns,
+ * before that action's own DB write lands). A plain read-then-compare
+ * guard isn't atomic across two separate requests; conditioning the
+ * UPDATE itself on the column still being null is. Returns whether this
+ * call actually wrote the row (false means some other caller already
+ * had - the caller should skip sending its own confirmation email in
+ * that case, since the other caller already sent one).
  */
-export async function refundOrder(id: string, refund: { stripeRefundId: string; amountRefunded: number }): Promise<void> {
-  const { error } = await supabaseAdmin()
+export async function refundOrder(id: string, refund: { stripeRefundId: string; amountRefunded: number }): Promise<boolean> {
+  const { data, error } = await supabaseAdmin()
     .from("orders")
     .update({
       status: "refunded",
@@ -244,8 +256,11 @@ export async function refundOrder(id: string, refund: { stripeRefundId: string; 
       refunded_at: new Date().toISOString(),
       amount_refunded: refund.amountRefunded,
     })
-    .eq("id", id);
+    .eq("id", id)
+    .is("stripe_refund_id", null)
+    .select("id");
   if (error) throw new Error(`refundOrder: ${error.message}`);
+  return (data?.length ?? 0) > 0;
 }
 
 /**

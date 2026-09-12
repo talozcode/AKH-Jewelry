@@ -99,10 +99,14 @@ export async function refundOrderAction(id: string): Promise<{ ok: true } | { ok
       { payment_intent: order.stripe_payment_intent_id! },
       { idempotencyKey: `refund-${order.id}-${order.amount_total}` }
     );
-    await refundOrder(order.id, { stripeRefundId: refund.id, amountRefunded: refund.amount });
+    const didWrite = await refundOrder(order.id, { stripeRefundId: refund.id, amountRefunded: refund.amount });
     revalidatePath("/admin/orders");
     revalidatePath("/admin");
-    if (order.customer_email) {
+    // didWrite is false only if the webhook's own refund.* handler won
+    // the race and already recorded this exact refund (see refundOrder's
+    // doc comment) - it already sent its own confirmation email, so this
+    // skips sending a second one for the same refund.
+    if (didWrite && order.customer_email) {
       await sendEmail({
         to: order.customer_email,
         ...refundConfirmationEmail({ customerName: order.customer_name, amountRefunded: refund.amount, currency: order.currency }),

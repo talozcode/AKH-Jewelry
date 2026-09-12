@@ -59,14 +59,47 @@ export function checkPurchasable(
  * currency, and this shop's catalog deliberately mixes ILS and USD per
  * product (see CLAUDE.md), so a cart spanning both has no single valid
  * session to build.
+ *
+ * `stockQuantity` lives on the PRODUCT row, not per size - it's one shared
+ * pool across every size of that product. `checkPurchasable` above only
+ * ever sees one line at a time, so two lines for the same product at
+ * *different* sizes (never merged upstream, since the merge key is
+ * product+size) each pass their own quantity against the full stock figure
+ * independently - 5 of size 6 plus 5 of size 7 against a 5-unit pool both
+ * "fit" on their own but together oversell by 5. This aggregates requested
+ * quantity per product id first and checks that sum against stock, on top
+ * of (not instead of) each line's own per-size validation.
  */
 export function checkCartPurchasable(
-  lines: { product: (Pick<Product, "isPublished" | "availability" | "availableSizes" | "stockQuantity" | "currency">) | undefined; size?: string; quantity: number }[]
+  lines: {
+    product: (Pick<Product, "id" | "isPublished" | "availability" | "availableSizes" | "stockQuantity" | "currency">) | undefined;
+    size?: string;
+    quantity: number;
+  }[]
 ): PurchasabilityCheck {
   if (lines.length === 0) return { ok: false, error: "Your cart is empty." };
   for (const line of lines) {
     const check = checkPurchasable(line.product, line.size, line.quantity);
     if (!check.ok) return check;
+  }
+  const totalsByProduct = new Map<string, number>();
+  for (const line of lines) {
+    // Product.id is optional at the type level (absent only on the frozen
+    // legacy design-concepts seed data, never on anything that reaches
+    // real checkout - see types.ts), but this map needs a real key.
+    const id = line.product!.id ?? "";
+    totalsByProduct.set(id, (totalsByProduct.get(id) ?? 0) + line.quantity);
+  }
+  for (const line of lines) {
+    const product = line.product!;
+    if (
+      product.availability === "In Stock" &&
+      product.stockQuantity !== null &&
+      product.stockQuantity !== undefined &&
+      totalsByProduct.get(product.id ?? "")! > product.stockQuantity
+    ) {
+      return { ok: false, error: `Only ${product.stockQuantity} of this piece left in stock across all sizes.` };
+    }
   }
   const currencies = new Set(lines.map((l) => l.product!.currency));
   if (currencies.size > 1) {

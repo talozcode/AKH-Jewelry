@@ -283,7 +283,7 @@ export const DEFAULTS: PageContentMap = {
       },
       {
         heading: "What information we collect",
-        body: "When you place an order we collect your name, email address, shipping address and the details of what you bought. If you email us, we keep that correspondence. Your card details are collected and processed directly by Stripe, our payment processor, and never reach AKH's own servers.",
+        body: "When you place an order we collect your name, email address, shipping address and the details of what you bought, along with any gift note or personalization request you choose to add at checkout. If you email us, we keep that correspondence. Your card details are collected and processed directly by Stripe, our payment processor, and never reach AKH's own servers.",
       },
       {
         heading: "Cookies and tracking",
@@ -295,7 +295,7 @@ export const DEFAULTS: PageContentMap = {
       },
       {
         heading: "Who we share it with",
-        body: "We share order information with the processors who run the shop on our behalf: Stripe (payment processing), Supabase (our database and file storage, hosted in Australia), and Vercel (website hosting; their server logs include visitor IP addresses for security and operational purposes). We do not sell or share your personal information with anyone for their own marketing purposes.",
+        body: "We share order information with the processors who run the shop on our behalf: Stripe (payment processing), Supabase (our database and file storage, hosted in Australia), Vercel (website hosting; their server logs include visitor IP addresses for security and operational purposes), and Resend (sends your order confirmation and shipping emails, once we've set this up). We do not sell or share your personal information with anyone for their own marketing purposes.",
       },
       {
         heading: "International data transfers",

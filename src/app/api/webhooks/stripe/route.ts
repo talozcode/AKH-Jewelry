@@ -74,18 +74,31 @@ export async function POST(req: Request) {
     return new Response("Invalid signature", { status: 400 });
   }
 
+  // Every handler below is safe for Stripe to retry: checkout.session.
+  // completed's real DB write is guarded by a unique constraint on
+  // session id (a retry hits isDuplicateSessionError and no-ops), and
+  // refund/dispute writes are plain idempotent overwrites (refundOrder's
+  // own atomic conditional update, setOrderDisputeStatus just re-setting
+  // the same values). So an unexpected exception here - a transient
+  // Supabase blip, not one of the already-handled early-return cases
+  // (duplicate event, deleted product, no line items) - is deliberately
+  // let through to a 500 rather than swallowed into 200: Stripe's
+  // automatic retry (up to 3 days) is the actual recovery mechanism for
+  // a real transient failure, and only a 500 makes it retry at all. This
+  // was previously a real gap: EVERY branch always returned 200
+  // regardless of what happened inside, so a transient failure was
+  // silently unrecoverable - Stripe never got a reason to try again, and
+  // the only other signal (an owner alert email) doesn't do anything
+  // until a Resend account is configured. alertOwnerOfError still fires
+  // either way, best-effort, before the error propagates.
   if (event.type === "checkout.session.completed") {
     const session = event.data.object as Stripe.Checkout.Session;
     try {
       await handleCheckoutCompleted(session);
     } catch (err) {
-      // Judgment call: log and still 200 for errors a Stripe retry can't
-      // fix (deleted product, a duplicate event already recorded) - a
-      // retry would just fail the same way and eventually cause Stripe to
-      // disable the endpoint. Only a genuinely transient failure should
-      // bubble past this into a 500 so Stripe retries it.
       console.error("stripe webhook: checkout.session.completed handling failed", err);
       await alertOwnerOfError("checkout.session.completed", err);
+      throw err;
     }
   }
 
@@ -103,6 +116,7 @@ export async function POST(req: Request) {
     } catch (err) {
       console.error(`stripe webhook: ${event.type} handling failed`, err);
       await alertOwnerOfError(event.type, err);
+      throw err;
     }
   }
 
@@ -119,6 +133,7 @@ export async function POST(req: Request) {
     } catch (err) {
       console.error(`stripe webhook: ${event.type} handling failed`, err);
       await alertOwnerOfError(event.type, err);
+      throw err;
     }
   }
 
@@ -151,16 +166,19 @@ async function handleRefundEvent(eventType: string, refund: Stripe.Refund) {
   }
 
   if (refund.status !== "succeeded") return; // not final yet (e.g. a pending bank-transfer refund)
-  if (order.stripe_refund_id === refund.id) return; // already recorded, idempotent no-op - see below
+  if (order.stripe_refund_id === refund.id) return; // fast-path: already recorded per this handler's own earlier read
 
-  await refundOrder(order.id, { stripeRefundId: refund.id, amountRefunded: refund.amount });
+  // The actual guard against a duplicate email is refundOrder's own
+  // atomic conditional update (see its doc comment) - the check above is
+  // just a fast path to skip the write entirely on an obvious replay.
+  // Without the atomic version, this read-then-compare pattern (checking
+  // `order.stripe_refund_id` from a read taken moments ago) can't detect
+  // a genuine cross-request race against refundOrderAction (the in-app
+  // button), which can land its own write in the gap between that read
+  // and this one.
+  const didWrite = await refundOrder(order.id, { stripeRefundId: refund.id, amountRefunded: refund.amount });
+  if (!didWrite) return; // refundOrderAction won the race and already sent its own confirmation email
 
-  // This is reached ONLY for a refund the app didn't already record (the
-  // idempotent no-op check just above) - i.e. one issued directly from
-  // the Stripe Dashboard, not through refundOrderAction (the in-app
-  // button), which already wrote stripe_refund_id itself moments earlier
-  // and sends its own confirmation email - see that action for why
-  // sending it there too would risk a duplicate for the same refund.
   if (order.customer_email) {
     await sendEmail({
       to: order.customer_email,
@@ -179,9 +197,19 @@ async function handleDisputeEvent(eventType: string, dispute: Stripe.Dispute) {
   const order = await getOrderByPaymentIntentId(paymentIntentId);
   if (!order) return; // a dispute on a charge this app doesn't know about
 
+  // Stripe explicitly expects webhook handlers to tolerate at-least-once
+  // redelivery of the same event. setOrderDisputeStatus is safely
+  // idempotent on its own (just re-writes the same values), but without
+  // this guard a redelivered charge.dispute.created would re-send the
+  // owner alert email every time - a real, different case from the
+  // .updated/.closed de-dup already handled below by only alerting on
+  // .created in the first place. Mirrors the equivalent guard in
+  // handleRefundEvent.
+  const alreadyRecorded = order.stripe_dispute_id === dispute.id;
+
   await setOrderDisputeStatus(order.id, dispute.id, dispute.status);
 
-  if (eventType === "charge.dispute.created") {
+  if (eventType === "charge.dispute.created" && !alreadyRecorded) {
     const ownerEmail = ownerEmailAddress();
     if (ownerEmail) {
       await sendEmail({
@@ -280,11 +308,19 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
       // Tracked inventory: the existing atomic per-unit RPC, called once
       // per unit in this line (quantity > 1 is a new possibility with
       // multi-item carts) rather than widening the RPC to decrement by N -
-      // reuses the exact same race-safe primitive unchanged. Stops at the
-      // first failure/zero rather than looping past it: once stock hits 0
-      // or oversells, further iterations for the same line would just
-      // repeat the same outcome.
+      // reuses the exact same race-safe primitive unchanged. The loop runs
+      // for every unit in `item.quantity`, even after stock hits 0 or a
+      // decrement fails - an EARLIER version stopped (`break`) the instant
+      // it saw newQty===0, which silently under-reported a partial
+      // oversell: buying quantity=3 against 2 in stock would decrement 2,
+      // correctly flip the product to Out of Stock, then exit before ever
+      // attempting the 3rd unit, so oversold was never set even though the
+      // customer paid for a piece that doesn't exist. Continuing the loop
+      // means that 3rd iteration's RPC call correctly returns null (stock
+      // is already 0) and the shortfall gets flagged like any other
+      // oversell.
       let oversold = false;
+      let flippedToOutOfStock = false;
       for (let i = 0; i < item.quantity; i++) {
         const { data: newQty, error: rpcError } = await supabaseAdmin().rpc("decrement_product_stock", {
           p_product_id: product.id!,
@@ -293,11 +329,11 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
 
         if (newQty === null) {
           oversold = true;
-          break;
+          continue;
         }
-        if (newQty === 0) {
+        if (newQty === 0 && !flippedToOutOfStock) {
           await setProductAvailability(product.id!, "Out of Stock");
-          break;
+          flippedToOutOfStock = true;
         }
       }
       if (oversold) {

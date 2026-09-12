@@ -111,6 +111,40 @@ describe("checkCartPurchasable", () => {
     ]);
     expect(result.ok).toBe(false);
   });
+
+  it("rejects the same product bought at two different sizes when the combined quantity exceeds the shared stock pool, even though each size individually fits", () => {
+    // stockQuantity lives on the product, not per size - two lines for the
+    // same product id at different sizes are never merged upstream (the
+    // merge key is product+size), so each line's own check against the
+    // full stock figure can pass individually while the combined total
+    // oversells. A ring with 5 in stock: 5 of size 6 + 5 of size 7 each
+    // "fit" against 5 on their own but together ask for 10.
+    const ring = { ...ilsProduct, id: "ring-1", stockQuantity: 5, availableSizes: ["6", "7"] };
+    const result = checkCartPurchasable([
+      { product: ring, size: "6", quantity: 5 },
+      { product: ring, size: "7", quantity: 5 },
+    ]);
+    expect(result.ok).toBe(false);
+  });
+
+  it("allows the same product at two different sizes when the combined quantity still fits the shared stock pool", () => {
+    const ring = { ...ilsProduct, id: "ring-1", stockQuantity: 5, availableSizes: ["6", "7"] };
+    const result = checkCartPurchasable([
+      { product: ring, size: "6", quantity: 2 },
+      { product: ring, size: "7", quantity: 3 },
+    ]);
+    expect(result).toEqual({ ok: true });
+  });
+
+  it("does not let a shared-pool aggregate check reject two DIFFERENT products that each individually fit", () => {
+    const ringA = { ...ilsProduct, id: "ring-a", stockQuantity: 3 };
+    const ringB = { ...ilsProduct, id: "ring-b", stockQuantity: 3 };
+    const result = checkCartPurchasable([
+      { product: ringA, quantity: 3 },
+      { product: ringB, quantity: 3 },
+    ]);
+    expect(result).toEqual({ ok: true });
+  });
 });
 
 describe("buildCartCheckoutParams", () => {

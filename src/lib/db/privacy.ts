@@ -48,13 +48,27 @@ export async function exportPersonalData(email: string): Promise<{ email: string
 }
 
 /**
- * The columns this patch touches, erased in place. Everything else on the
- * order row (product/price/currency, size, Stripe IDs, amount, status,
- * shipping_country, timestamps) is preserved: it's the financial/tax
- * record this data is retained for, and isn't itself personal data once
- * the identity/contact/address columns below are gone. shipping_country
- * specifically survives because it's needed for VAT/customs record-keeping
- * (see the Privacy Policy's retention section).
+ * The columns this patch touches, erased in place. `special_instructions`
+ * (the optional gift note/engraving request collected at checkout, added
+ * after this tooling was first built) is included here because a customer
+ * can and does write genuine personal information into free text there
+ * (e.g. "for my mother Sarah, her birthday is..."); a QA audit found it had
+ * been left out since the "Order extras" work shipped, which meant
+ * "Erase permanently" didn't actually erase it despite the on-screen copy
+ * in PrivacyLookupForm implying a full identity/contact erasure.
+ *
+ * Deliberately still NOT touched, with reasoning (not oversight): product/
+ * price/currency/size/amount/status/timestamps (the financial/tax record
+ * this data is retained for, not personal data once identity/contact are
+ * gone); shipping_country (kept for VAT/customs record-keeping, see the
+ * Privacy Policy's retention section); the Stripe IDs (already documented
+ * pseudonymization caveat - Stripe retains its own copy regardless);
+ * tracking_number/carrier (the shop's own record of what it shipped and
+ * how, useful for post-erasure delivery recourse, and not meaningfully
+ * "about" the customer once name/address are gone - the same logic as
+ * shipping_country); stripe_dispute_id/dispute_status (the shop's
+ * financial dispute-handling record, same rationale as the other Stripe
+ * IDs above).
  *
  * A row that's already anonymized (`anonymized_at` set) is left alone by
  * `anonymizeOrdersByEmail` below rather than re-patched, but this function
@@ -66,11 +80,19 @@ export async function exportPersonalData(email: string): Promise<{ email: string
  */
 export type AnonymizedOrderPatch = Pick<
   Order,
-  "customer_name" | "customer_email" | "shipping_line1" | "shipping_line2" | "shipping_city" | "shipping_state" | "shipping_postal_code" | "anonymized_at"
+  | "customer_name"
+  | "customer_email"
+  | "shipping_line1"
+  | "shipping_line2"
+  | "shipping_city"
+  | "shipping_state"
+  | "shipping_postal_code"
+  | "special_instructions"
+  | "anonymized_at"
 >;
 
 export function buildAnonymizedOrderPatch(
-  order: Pick<Order, "id" | "shipping_line2" | "shipping_state">
+  order: Pick<Order, "id" | "shipping_line2" | "shipping_state" | "special_instructions">
 ): AnonymizedOrderPatch {
   // NOT NULL columns always get the placeholder; nullable columns keep
   // null when there was nothing to erase in the first place (a blank
@@ -90,6 +112,7 @@ export function buildAnonymizedOrderPatch(
     shipping_city: "[erased]",
     shipping_state: eraseIfPresent(order.shipping_state),
     shipping_postal_code: "[erased]",
+    special_instructions: eraseIfPresent(order.special_instructions),
     anonymized_at: new Date().toISOString(),
   };
 }

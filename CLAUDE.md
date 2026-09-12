@@ -1204,6 +1204,212 @@ evolving enum verbatim rather than a fixed local list).
   `order_items` row with the correct product/name/amount, then deleted
   the test order and expired the Stripe session afterward.
 
+## Full QA audit: 6 parallel agents across front/backend, security, admin, privacy, UI/UX (2026-09-12)
+
+Dispatched per explicit request to audit "as thorough as possible" -
+checkout/cart edge cases, webhook/order/inventory backend integrity,
+admin auth/secrets security, privacy/compliance data integrity, live
+UI/UX + accessibility, and a general security scan, each independently
+tracing real code paths rather than sampling. Every genuinely new,
+concretely-traced finding was either fixed (with a regression test where
+the logic is pure/testable) or documented here with reasoning; nothing
+already covered by an earlier audit's documented gaps was re-reported.
+190 tests passing (up from 183) after this pass.
+
+**Fixed - financial-loss/critical:**
+- **Partial oversell went unflagged.** The multi-item cart's per-unit
+  stock-decrement loop (webhook route, `handleCheckoutCompleted`) used to
+  `break` the instant it saw `newQty === 0`, so buying quantity 3 against
+  2 in stock decremented 2, correctly flipped the product to Out of
+  Stock, then exited before ever attempting the 3rd unit - `oversold` was
+  never set even though the customer paid for a piece that doesn't
+  exist. Fixed: the loop now runs for every unit in `item.quantity`
+  regardless of hitting zero, so the extra iteration correctly returns
+  `null` (stock already 0) and gets flagged like any other oversell.
+- **Cross-size stock oversell, not a race.** `stockQuantity` lives on the
+  product row, one shared pool across every size, but
+  `checkCartPurchasable` only ever checked each cart line against that
+  full figure independently - 5 of size 6 plus 5 of size 7 against a
+  5-unit pool each "fit" on their own but together ask for 10, in one
+  ordinary non-racy checkout (e.g. "not sure which size, buy both").
+  Fixed: `checkCartPurchasable` now aggregates requested quantity per
+  product id across all its lines first, then checks that sum against
+  stock, on top of (not instead of) each line's own per-size validation.
+  Covered by 3 new tests in `checkoutParams.test.ts`.
+
+**Fixed - high severity:**
+- **Draft/unpublished products were fully public.** `getProductBySlug`
+  never filtered `is_published`, unlike every other product-fetching
+  function - a draft's full page (name, photos, price, story, and a
+  live-looking Buy button) was crawlable and indexable to anyone who had
+  or guessed its slug. Checkout itself was always safely rejected
+  server-side, so there was no financial exposure, only a content leak.
+  Fixed with `.eq("is_published", true)`, matching `getProducts`/
+  `getFeaturedProducts`/`getHeroProduct`. (`getProductById`, admin-only,
+  is intentionally untouched - the admin legitimately needs to see
+  drafts.)
+- **JSON-LD script-injection sink.** Admin-entered product name/
+  description (no length/character restriction in `ProductForm`) went
+  straight into `JSON.stringify()` for a `<script type="application/
+  ld+json">` tag via `dangerouslySetInnerHTML` - a name containing the
+  literal string `</script>` would close the tag early and let
+  everything after it parse as live HTML, the same "admin credential
+  leak -> stored XSS on every storefront page" threat model CLAUDE.md
+  already documents for `RichText.tsx`, just on a sink that mitigation
+  didn't cover. Fixed with a new `src/lib/jsonLd.ts` (`jsonLdScript()`,
+  escapes every `<` to its unicode escape, invisible to `JSON.parse` and
+  to search engines' structured-data parsers - the same fix Next's own docs
+  recommend for this exact pattern), directly tested.
+- **Gift note wasn't covered by the GDPR erasure tool.** `special_
+  instructions` (the optional gift-note/engraving field added in "Order
+  extras" above) was never added to `buildAnonymizedOrderPatch`'s
+  allowlist after that field shipped - a customer's free-text personal
+  note (genuinely can contain real personal information) survived
+  "Erase permanently" untouched, despite `PrivacyLookupForm`'s own copy
+  implying a full identity/contact erasure. Fixed: added to the patch
+  (erase-if-present, like `shipping_line2`) and to the allowlist test.
+  The privacy.ts doc comment was also rewritten to explicitly name and
+  justify every column that's still deliberately preserved
+  (`tracking_number`/`carrier`/`stripe_dispute_id`/`dispute_status` -
+  the shop's own shipping/dispute records, not meaningfully "about" the
+  customer once identity/contact are gone, same reasoning as the
+  already-documented `shipping_country`/Stripe-ID preservation), so a
+  future reader doesn't have to guess which omissions are decisions.
+- **No security response headers anywhere.** Verified via curl on both
+  localhost and production: no CSP, no X-Frame-Options, nothing but
+  Vercel's own platform-default HSTS - `/admin/login` and every
+  authenticated admin page could be framed by an external site with
+  nothing blocking a clickjacking/UI-redress attack against the single
+  owner. Added `X-Frame-Options: DENY`, `Content-Security-Policy:
+  frame-ancestors 'none'`, `X-Content-Type-Options: nosniff`,
+  `Referrer-Policy: strict-origin-when-cross-origin`, and a minimal
+  `Permissions-Policy` in `next.config.ts`. Deliberately did NOT add a
+  full CSP restricting script/style sources: getting `script-src` right
+  needs a real click-through test against Stripe's redirect and Next's
+  own inline scripts, and this session had no live browser access to
+  verify one without risking a false, untested config on a live payment
+  site (a broken CSP silently breaking checkout would be worse than the
+  gap it closes).
+
+**Fixed - medium severity:**
+- **A non-UUID product id crashed checkout with a raw unhandled
+  exception.** `createCartCheckoutSession`'s `getProductById` calls sat
+  outside the function's own try/catch - a malformed id (reachable since
+  this Server Action is directly callable with any payload) made the
+  underlying query throw uncaught, reaching the visitor as this app's
+  generic error page instead of the friendly inline "please try again"
+  message the Stripe-failure path already has. Fixed by moving those
+  fetches inside the try/catch.
+- **Certain slugs 500'd instead of 404'ing** - confirmed live on
+  production: `/product/OR1=1` and `/collections/OR1=1` reliably made
+  PostgREST return a query error that neither `getProductBySlug` nor
+  `getCollectionBySlug` caught, reaching the visitor as an unhandled
+  500 (Next's production error redaction meant no data/internals
+  leaked, verified - an availability bug, not a confidentiality one).
+  Fixed: both now log the error and return "not found" instead of
+  throwing, since `slug` here is a raw, fully attacker-controlled route
+  param where a real infra failure and an adversarial value look
+  identical to the visitor either way.
+- **A malformed cart entry in localStorage crashed the whole cart
+  page.** `readFromStorage` only checked `Array.isArray`, never each
+  line's actual shape, and `CartPageClient` does `line.price.
+  toLocaleString()` unconditionally - a hand-edited or corrupted stored
+  value threw a `TypeError` on render, with no error boundary anywhere
+  in this app, leaving a visitor stuck unable to see or clear their
+  cart. Fixed with `isValidCartLine()`, dropping any line that fails
+  shape validation rather than trusting raw JSON.
+- **Two browser tabs silently clobbered each other's cart.** No
+  `storage` event listener existed anywhere in `lib/cart/store.ts` -
+  `cachedLines` is a module-level variable per page load, only ever
+  updated by that tab's own writes, so a second tab's add-to-cart could
+  silently overwrite the first tab's item with no error to either tab.
+  Fixed: a `storage` event listener (fires in every OTHER tab sharing
+  this origin, never the tab that made the change) invalidates the
+  cache and notifies subscribers.
+- **A replayed Stripe dispute-created event double-emailed the owner.**
+  `handleDisputeEvent` had no idempotency guard before sending
+  `ownerDisputeAlertEmail`, unlike the equivalent guard already in
+  `handleRefundEvent` - Stripe explicitly expects handlers to tolerate
+  at-least-once redelivery of the same event. Fixed with the same
+  `stripe_dispute_id === dispute.id` guard pattern.
+- **`refundOrderAction` and the webhook's own refund handler could race
+  and double-email a refund confirmation.** The webhook's guard (`if
+  (order.stripe_refund_id === refund.id) return`) was a read-then-
+  compare check against a read taken moments earlier - not atomic
+  across two independent request paths that can both reach `refundOrder`
+  for the same refund (Stripe can fire `refund.created` the instant the
+  admin action's own `stripe.refunds.create()` call returns, before that
+  action's own DB write lands). Fixed: `refundOrder` now does the write
+  itself atomically (`.is("stripe_refund_id", null)` as part of the
+  UPDATE, not a separate read) and returns whether it actually wrote the
+  row; both call sites only send their own confirmation email when it
+  did, so whichever caller wins the race sends exactly one email.
+- **Every webhook branch always returned 200, even on genuinely
+  transient failures**, contradicting the route's own comment claiming a
+  distinction that was never actually implemented. Since checkout's
+  order-insert is idempotency-guarded (a unique constraint on session
+  id) and refund/dispute writes are plain idempotent overwrites, a
+  Stripe retry of any of them is always safe - so an unexpected
+  exception (not one of the already-handled early-return cases like a
+  duplicate event or a deleted product) is now deliberately let through
+  to a 500 instead of swallowed into 200. This sharpens a real gap: with
+  no Resend account configured yet, the owner-alert email is currently
+  the only other signal for a failure, and it's inert until that's set
+  up - a 500 is what actually makes Stripe try again.
+
+**Fixed - low/cosmetic:**
+- A stray, mislabeled "Search" link in the mobile nav drawer
+  (`Header.tsx`) actually pointed at `/story` - a copy-paste leftover
+  duplicating the "Our Story" link already present one line above it in
+  the same menu. Removed (search itself remains a documented stub with
+  no route to point at yet).
+- The cart page's decrement button had no `disabled` state at quantity
+  1, unlike the identical-looking control on the product page - clicking
+  it once more at quantity 1 silently deleted the entire line (per
+  `setCartLineQuantity`'s existing "quantity < 1 means remove" rule),
+  a plausible misclick-deletes-your-cart-line scenario. Fixed to match
+  `PurchaseArea`'s behavior: disabled at quantity 1, so removing a line
+  stays a deliberate "Remove" click.
+- Privacy Policy's "What information we collect" didn't name the
+  gift-note/personalization field as a collected data category, and
+  "Who we share it with" didn't mention Resend at all - both true today
+  only because Resend isn't configured yet, and the policy would have
+  gone silently out of date the instant `RESEND_API_KEY` is set (turning
+  on real email needs no other code change - see "Order extras" above).
+  Both sections updated (in `pages.ts`'s `DEFAULTS` and, via a targeted
+  patch preserving every other section untouched, the live `pages` row)
+  to disclose both up front.
+- A stale doc comment in `RichText.tsx` claimed the admin had "no rate
+  limiting," no longer true since login throttling shipped earlier in
+  this file's own history. Reworded to state what's actually still true
+  (no 2FA) rather than an outdated blanket claim.
+
+**Documented, not fixed** (real, lower-severity gaps that need more than
+a small isolated change, or need a live browser this session couldn't
+get - the shared `chrome-devtools-mcp` browser profile was locked by
+another concurrent session for this entire audit, confirmed via `ps aux`
+showing two other Chrome processes already bound to it):
+- **The cart page's quantity stepper has no upper bound and no live
+  stock awareness** - unlike the product page's `maxQuantityFor()`,
+  which caps the "+" button against real stock. A customer can click
+  past what's actually available with no inline warning; it's still
+  correctly rejected server-side at checkout (`checkPurchasable` shows
+  "Only N left in stock" inline), so this is a UX inconsistency, not a
+  financial one. A real fix means fetching each cart line's current
+  product stock into the client, which `CartLine` doesn't carry today -
+  a bigger change than this pass's scope, deferred rather than rushed.
+- **The full browser-based portion of this audit (viewports, console
+  errors, keyboard-nav trace, an authenticated admin walkthrough, a real
+  mixed-currency cart click-through) never ran** - only static code
+  review did, for the reason above. Worth re-running once the shared
+  browser profile is free, ideally with an isolated profile per agent so
+  one locked session can't block every other one, as it did here.
+
+No new findings from the admin-auth/secrets audit (every Server Action
+across every admin `actions.ts` file was checked exhaustively, not
+sampled - all correctly call `requireAdminAction()`/`requireAdminPage()`)
+or from `npm audit` (0 vulnerabilities across 548 dependencies).
+
 ## What's stubbed / explicitly NOT built yet
 
 - Analytics/conversion tracking, abandoned-cart email, wishlist persistence

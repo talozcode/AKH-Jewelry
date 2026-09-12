@@ -38,19 +38,25 @@ export async function createCartCheckoutSession(lines: CartLineInput[]): Promise
   }
   const mergedLines = [...merged.values()];
 
-  const products = await Promise.all(mergedLines.map((line) => getProductById(line.productId)));
-
-  const purchasable = checkCartPurchasable(
-    mergedLines.map((line, i) => ({ product: products[i], size: line.size, quantity: line.quantity }))
-  );
-  if (!purchasable.ok) return purchasable;
-
-  const headerList = await headers();
-  const host = headerList.get("host");
-  const protocol = host?.startsWith("localhost") ? "http" : "https";
-  const origin = `${protocol}://${host}`;
-
+  // getProductById is inside this try/catch (not run ahead of it): a
+  // malformed/non-UUID productId - reachable since this is a directly
+  // callable Server Action, not just whatever the UI happens to send -
+  // makes the underlying Supabase query throw, and that needs the same
+  // friendly, inline "please try again" result as a Stripe failure below,
+  // not an unhandled exception (this app has no error boundary anywhere).
   try {
+    const products = await Promise.all(mergedLines.map((line) => getProductById(line.productId)));
+
+    const purchasable = checkCartPurchasable(
+      mergedLines.map((line, i) => ({ product: products[i], size: line.size, quantity: line.quantity }))
+    );
+    if (!purchasable.ok) return purchasable;
+
+    const headerList = await headers();
+    const host = headerList.get("host");
+    const protocol = host?.startsWith("localhost") ? "http" : "https";
+    const origin = `${protocol}://${host}`;
+
     const stripe = await stripeClient();
     // Non-null: checkCartPurchasable's ok:true branch above already
     // implies every product in `products` is defined (it's the first

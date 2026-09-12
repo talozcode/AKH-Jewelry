@@ -74,9 +74,10 @@ export function CartPageClient() {
             <div className="flex items-center gap-2">
               <button
                 type="button"
+                disabled={line.quantity <= 1}
                 onClick={() => updateCartQuantity(line.productId, line.size, line.quantity - 1)}
                 aria-label="Decrease quantity"
-                className="flex h-9 w-9 items-center justify-center border border-ink/25 text-ink transition hover:border-ink"
+                className="flex h-9 w-9 items-center justify-center border border-ink/25 text-ink transition hover:border-ink disabled:cursor-not-allowed disabled:opacity-30"
               >
                 -
               </button>

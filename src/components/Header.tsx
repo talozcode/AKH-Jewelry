@@ -84,9 +84,6 @@ export function Header() {
                 {item.label}
               </Link>
             ))}
-            <Link href="/story" onClick={() => setOpen(false)} className="border-b border-ink/5 py-3 text-base tracking-wide">
-              Search
-            </Link>
             <Link href="/cart" onClick={() => setOpen(false)} className="py-3 text-base tracking-wide">
               Cart{totalCount > 0 ? ` (${totalCount})` : ""}
             </Link>
