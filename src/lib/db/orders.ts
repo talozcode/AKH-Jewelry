@@ -1,5 +1,6 @@
 import { supabaseAdmin } from "../supabase/server";
 import type { Database } from "../supabase/database.types";
+import { SPECIAL_INSTRUCTIONS_FIELD_KEY } from "../checkoutParams";
 import type Stripe from "stripe";
 
 export type Order = Database["public"]["Tables"]["orders"]["Row"];
@@ -203,6 +204,24 @@ export async function markOrderItemOversold(itemId: string): Promise<void> {
   if (error) throw new Error(`markOrderItemOversold: ${error.message}`);
 }
 
+/** Admin only - call `requireAdminAction()` before this. Either value can
+ *  be cleared by passing null (e.g. to correct a typo), independent of
+ *  the other. */
+export async function setOrderTracking(id: string, tracking: { trackingNumber: string | null; carrier: string | null }): Promise<void> {
+  const { error } = await supabaseAdmin()
+    .from("orders")
+    .update({ tracking_number: tracking.trackingNumber, carrier: tracking.carrier })
+    .eq("id", id);
+  if (error) throw new Error(`setOrderTracking: ${error.message}`);
+}
+
+/** Called only from the Stripe webhook's dispute handlers - not a Server
+ *  Action, no admin gate needed. */
+export async function setOrderDisputeStatus(id: string, disputeId: string, status: string): Promise<void> {
+  const { error } = await supabaseAdmin().from("orders").update({ stripe_dispute_id: disputeId, dispute_status: status }).eq("id", id);
+  if (error) throw new Error(`setOrderDisputeStatus: ${error.message}`);
+}
+
 /** Admin only - call `requireAdminAction()` before this. */
 export async function updateOrderStatus(id: string, status: SettableOrderStatus): Promise<void> {
   const { error } = await supabaseAdmin().from("orders").update({ status }).eq("id", id);
@@ -259,9 +278,17 @@ export function canRefund(order: Pick<Order, "status" | "stripe_payment_intent_i
  * details are present on every completed session shape).
  */
 export function sessionToOrderRow(
-  session: Pick<Stripe.Checkout.Session, "id" | "payment_intent" | "customer_details" | "collected_information" | "amount_total" | "currency">
+  session: Pick<
+    Stripe.Checkout.Session,
+    "id" | "payment_intent" | "customer_details" | "collected_information" | "amount_total" | "currency" | "custom_fields"
+  >
 ): NewOrderRow {
   const shipping = session.collected_information?.shipping_details;
+  // custom_fields is a plain field on the Session resource (unlike line
+  // items, it needs no separate API call/expand to read) - see
+  // checkoutParams.ts's SPECIAL_INSTRUCTIONS_FIELD_KEY and
+  // buildCartCheckoutParams for where this is collected.
+  const giftNote = session.custom_fields?.find((f) => f.key === SPECIAL_INSTRUCTIONS_FIELD_KEY)?.text?.value;
   return {
     customer_name: session.customer_details?.name ?? "",
     customer_email: session.customer_details?.email ?? "",
@@ -275,6 +302,7 @@ export function sessionToOrderRow(
     stripe_payment_intent_id: typeof session.payment_intent === "string" ? session.payment_intent : null,
     amount_total: session.amount_total ?? 0,
     currency: (session.currency ?? "ils").toUpperCase(),
+    special_instructions: giftNote || null,
   };
 }
 

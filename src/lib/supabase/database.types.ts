@@ -142,6 +142,11 @@ export type Database = {
           refunded_at: string | null;
           amount_refunded: number;
           anonymized_at: string | null;
+          tracking_number: string | null;
+          carrier: string | null;
+          special_instructions: string | null;
+          stripe_dispute_id: string | null;
+          dispute_status: string | null;
           created_at: string;
           updated_at: string;
         };

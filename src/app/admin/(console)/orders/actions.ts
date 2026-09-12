@@ -3,8 +3,20 @@
 import { revalidatePath } from "next/cache";
 import { requireAdminAction } from "@/lib/admin/auth";
 import { friendlyDbError } from "@/lib/admin/friendlyError";
-import { canRefund, getOrderById, getOrders, ordersToCsv, refundOrder, updateOrderStatus, type OrderStatus, type SettableOrderStatus } from "@/lib/db/orders";
+import {
+  canRefund,
+  getOrderById,
+  getOrders,
+  ordersToCsv,
+  refundOrder,
+  setOrderTracking,
+  updateOrderStatus,
+  type OrderStatus,
+  type SettableOrderStatus,
+} from "@/lib/db/orders";
 import { stripeClient } from "@/lib/stripe";
+import { sendEmail } from "@/lib/email/send";
+import { orderShippedEmail, refundConfirmationEmail } from "@/lib/email/templates";
 
 const SETTABLE_STATUSES: SettableOrderStatus[] = ["unfulfilled", "shipped"];
 
@@ -24,9 +36,38 @@ export async function updateOrderStatusAction(
     await updateOrderStatus(id, status);
     revalidatePath("/admin/orders");
     revalidatePath("/admin");
+    if (status === "shipped") {
+      const order = await getOrderById(id);
+      if (order?.customer_email) {
+        await sendEmail({
+          to: order.customer_email,
+          ...orderShippedEmail({
+            customerName: order.customer_name,
+            items: order.items.map((item) => ({ name: item.product_name, size: item.size, quantity: item.quantity })),
+            trackingNumber: order.tracking_number,
+            carrier: order.carrier,
+          }),
+        });
+      }
+    }
     return { ok: true };
   } catch (err) {
     return { ok: false, error: err instanceof Error ? friendlyDbError(err.message) : "Failed to update status" };
+  }
+}
+
+export async function updateTrackingAction(
+  id: string,
+  trackingNumber: string | null,
+  carrier: string | null
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  await requireAdminAction();
+  try {
+    await setOrderTracking(id, { trackingNumber, carrier });
+    revalidatePath("/admin/orders");
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? friendlyDbError(err.message) : "Failed to save tracking" };
   }
 }
 
@@ -61,6 +102,12 @@ export async function refundOrderAction(id: string): Promise<{ ok: true } | { ok
     await refundOrder(order.id, { stripeRefundId: refund.id, amountRefunded: refund.amount });
     revalidatePath("/admin/orders");
     revalidatePath("/admin");
+    if (order.customer_email) {
+      await sendEmail({
+        to: order.customer_email,
+        ...refundConfirmationEmail({ customerName: order.customer_name, amountRefunded: refund.amount, currency: order.currency }),
+      });
+    }
     return { ok: true };
   } catch (err) {
     return { ok: false, error: err instanceof Error ? friendlyDbError(err.message) : "Refund failed" };

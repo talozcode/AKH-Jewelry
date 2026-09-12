@@ -7,14 +7,41 @@ import {
   markOrderItemOversold,
   refundOrder,
   sessionToOrderRow,
+  setOrderDisputeStatus,
   type NewOrderItemRow,
 } from "@/lib/db/orders";
 import { supabaseAdmin } from "@/lib/supabase/server";
+import { ownerEmailAddress, sendEmail } from "@/lib/email/send";
+import { orderConfirmationEmail, ownerDisputeAlertEmail, ownerErrorAlertEmail, ownerNewOrderAlertEmail, refundConfirmationEmail } from "@/lib/email/templates";
 import type Stripe from "stripe";
 
 // This repo's first API Route Handler. Runs on the default Node runtime
 // (not Edge) - Stripe's SDK needs Node's crypto for signature
 // verification.
+
+// Domain cutover to akhjewelry.com hasn't happened yet as of this writing
+// (see CLAUDE.md's launch checklist) - this is the site's real current
+// address, used only for links inside owner alert emails.
+const ADMIN_ORDERS_URL = `${process.env.SITE_URL || "https://akh-jewelry.vercel.app"}/admin/orders`;
+
+/**
+ * Closes the "no error alerting anywhere" gap: a failure in any of this
+ * route's catch blocks used to only ever reach Vercel's server logs - a
+ * surface the owner has no account/reason to know exists. Best-effort:
+ * wrapped in its own try/catch so a failed alert email can never turn an
+ * already-handled error into an unhandled one, and never sent if
+ * OWNER_EMAIL/RESEND_API_KEY aren't configured (sendEmail no-ops then).
+ */
+async function alertOwnerOfError(context: string, err: unknown) {
+  const ownerEmail = ownerEmailAddress();
+  if (!ownerEmail) return;
+  try {
+    const detail = err instanceof Error ? err.message : String(err);
+    await sendEmail({ to: ownerEmail, ...ownerErrorAlertEmail({ context, detail }) });
+  } catch (alertErr) {
+    console.error("stripe webhook: failed to send owner error alert", alertErr);
+  }
+}
 
 export async function POST(req: Request) {
   const signature = req.headers.get("stripe-signature");
@@ -58,6 +85,7 @@ export async function POST(req: Request) {
       // disable the endpoint. Only a genuinely transient failure should
       // bubble past this into a 500 so Stripe retries it.
       console.error("stripe webhook: checkout.session.completed handling failed", err);
+      await alertOwnerOfError("checkout.session.completed", err);
     }
   }
 
@@ -74,6 +102,23 @@ export async function POST(req: Request) {
       await handleRefundEvent(event.type, refund);
     } catch (err) {
       console.error(`stripe webhook: ${event.type} handling failed`, err);
+      await alertOwnerOfError(event.type, err);
+    }
+  }
+
+  // A chargeback was previously invisible in this app entirely - only
+  // visible by logging into the Stripe Dashboard directly, with nothing
+  // reminding the owner it's happening or that Stripe's evidence deadline
+  // is time-boxed (a missed deadline is an automatic loss). Only
+  // `.created` triggers the alert email - `.updated`/`.closed` just keep
+  // the stored status current without re-emailing on every status ping.
+  if (event.type === "charge.dispute.created" || event.type === "charge.dispute.updated" || event.type === "charge.dispute.closed") {
+    const dispute = event.data.object as Stripe.Dispute;
+    try {
+      await handleDisputeEvent(event.type, dispute);
+    } catch (err) {
+      console.error(`stripe webhook: ${event.type} handling failed`, err);
+      await alertOwnerOfError(event.type, err);
     }
   }
 
@@ -106,9 +151,50 @@ async function handleRefundEvent(eventType: string, refund: Stripe.Refund) {
   }
 
   if (refund.status !== "succeeded") return; // not final yet (e.g. a pending bank-transfer refund)
-  if (order.stripe_refund_id === refund.id) return; // already recorded, idempotent no-op
+  if (order.stripe_refund_id === refund.id) return; // already recorded, idempotent no-op - see below
 
   await refundOrder(order.id, { stripeRefundId: refund.id, amountRefunded: refund.amount });
+
+  // This is reached ONLY for a refund the app didn't already record (the
+  // idempotent no-op check just above) - i.e. one issued directly from
+  // the Stripe Dashboard, not through refundOrderAction (the in-app
+  // button), which already wrote stripe_refund_id itself moments earlier
+  // and sends its own confirmation email - see that action for why
+  // sending it there too would risk a duplicate for the same refund.
+  if (order.customer_email) {
+    await sendEmail({
+      to: order.customer_email,
+      ...refundConfirmationEmail({ customerName: order.customer_name, amountRefunded: refund.amount, currency: order.currency }),
+    });
+  }
+}
+
+async function handleDisputeEvent(eventType: string, dispute: Stripe.Dispute) {
+  const paymentIntentId = typeof dispute.payment_intent === "string" ? dispute.payment_intent : dispute.payment_intent?.id;
+  if (!paymentIntentId) {
+    console.error("stripe webhook: dispute event has no payment_intent", dispute.id);
+    return;
+  }
+
+  const order = await getOrderByPaymentIntentId(paymentIntentId);
+  if (!order) return; // a dispute on a charge this app doesn't know about
+
+  await setOrderDisputeStatus(order.id, dispute.id, dispute.status);
+
+  if (eventType === "charge.dispute.created") {
+    const ownerEmail = ownerEmailAddress();
+    if (ownerEmail) {
+      await sendEmail({
+        to: ownerEmail,
+        ...ownerDisputeAlertEmail({
+          customerName: order.customer_name,
+          amount: dispute.amount,
+          currency: dispute.currency.toUpperCase(),
+          adminOrdersUrl: ADMIN_ORDERS_URL,
+        }),
+      });
+    }
+  }
 }
 
 /**
@@ -129,7 +215,8 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     return;
   }
 
-  const { data: insertedOrder, error } = await supabaseAdmin().from("orders").insert(sessionToOrderRow(session)).select("id").single();
+  const orderRow = sessionToOrderRow(session);
+  const { data: insertedOrder, error } = await supabaseAdmin().from("orders").insert(orderRow).select("id").single();
 
   if (error) {
     if (isDuplicateSessionError(error)) {
@@ -221,5 +308,36 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
         await markOrderItemOversold(item.id);
       }
     }
+  }
+
+  // Emails last, after everything else succeeded: a failed send here
+  // (e.g. no Resend account configured yet) must never roll back or
+  // re-throw past the order/inventory work that already happened -
+  // sendEmail() itself never throws, it returns { ok: false } and logs.
+  const emailItems = itemRows.map((row) => ({ name: row.product_name, size: row.size, quantity: row.quantity ?? 1 }));
+  if (orderRow.customer_email) {
+    await sendEmail({
+      to: orderRow.customer_email,
+      ...orderConfirmationEmail({
+        customerName: orderRow.customer_name,
+        items: emailItems,
+        amountTotal: orderRow.amount_total,
+        currency: orderRow.currency,
+        specialInstructions: orderRow.special_instructions ?? null,
+      }),
+    });
+  }
+  const ownerEmail = ownerEmailAddress();
+  if (ownerEmail) {
+    await sendEmail({
+      to: ownerEmail,
+      ...ownerNewOrderAlertEmail({
+        customerName: orderRow.customer_name,
+        items: emailItems,
+        amountTotal: orderRow.amount_total,
+        currency: orderRow.currency,
+        adminOrdersUrl: ADMIN_ORDERS_URL,
+      }),
+    });
   }
 }

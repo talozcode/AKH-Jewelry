@@ -104,6 +104,10 @@ export type CheckoutLine = {
   quantity: number;
 };
 
+/** Shared between buildCartCheckoutParams (writes it) and
+ *  sessionToOrderRow (reads it back), so the two can't drift apart. */
+export const SPECIAL_INSTRUCTIONS_FIELD_KEY = "gift_note";
+
 /**
  * Builds the params object for stripe.checkout.sessions.create(), pure so
  * the price math is testable without an actual Stripe call - `unit_amount`
@@ -158,5 +162,22 @@ export function buildCartCheckoutParams(lines: CheckoutLine[], origin: string): 
     shipping_address_collection: { allowed_countries: [...ALLOWED_SHIPPING_COUNTRIES] },
     success_url: `${origin}/order/success?session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${origin}/cart`,
+    // One optional free-text field, collected on Stripe's own hosted
+    // checkout page - verified live against Stripe's real API
+    // (custom_fields is session-level, so this applies to the whole
+    // order, not per line item; there's no per-item equivalent available
+    // without building a custom checkout UI, which this app deliberately
+    // doesn't have). Read back via `session.custom_fields` directly (a
+    // plain field on the Session resource, unlike line items, which need
+    // a separate listLineItems() call) - see sessionToOrderRow.
+    custom_fields: [
+      {
+        key: SPECIAL_INSTRUCTIONS_FIELD_KEY,
+        label: { type: "custom", custom: "Gift note or engraving request (optional)" },
+        type: "text",
+        optional: true,
+        text: { maximum_length: 255 },
+      },
+    ],
   };
 }

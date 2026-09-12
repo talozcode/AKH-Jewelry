@@ -4,9 +4,12 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import type { OrderWithItems, SettableOrderStatus } from "@/lib/db/orders";
 import { ConfirmDialog } from "../_components/ConfirmDialog";
-import { refundOrderAction, updateOrderStatusAction } from "./actions";
+import { refundOrderAction, updateOrderStatusAction, updateTrackingAction } from "./actions";
 
 const STATUSES: SettableOrderStatus[] = ["unfulfilled", "shipped"];
+
+const trackingInputClass =
+  "w-full rounded-md border border-[var(--admin-border-strong)] bg-[var(--admin-surface)] px-2 py-1 text-xs outline-none focus:border-[var(--admin-accent-soft)] focus:ring-1 focus:ring-[var(--admin-accent-soft)]";
 
 /**
  * `outOfStockProductIds` - the subset of this order's product ids that are
@@ -19,13 +22,31 @@ export function OrderRow({ order, outOfStockProductIds }: { order: OrderWithItem
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [refunding, startRefund] = useTransition();
+  const [savingTracking, startSaveTracking] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [confirmingRefund, setConfirmingRefund] = useState(false);
+  const [trackingNumber, setTrackingNumber] = useState(order.tracking_number ?? "");
+  const [carrier, setCarrier] = useState(order.carrier ?? "");
+  const [trackingSaved, setTrackingSaved] = useState(false);
 
   function handleStatusChange(status: SettableOrderStatus) {
     startTransition(async () => {
       const result = await updateOrderStatusAction(order.id, status);
       if (result.ok) router.refresh();
+    });
+  }
+
+  function handleSaveTracking() {
+    setError(null);
+    startSaveTracking(async () => {
+      const result = await updateTrackingAction(order.id, trackingNumber.trim() || null, carrier.trim() || null);
+      if (!result.ok) {
+        setError(result.error);
+        return;
+      }
+      setTrackingSaved(true);
+      setTimeout(() => setTrackingSaved(false), 2000);
+      router.refresh();
     });
   }
 
@@ -80,6 +101,18 @@ export function OrderRow({ order, outOfStockProductIds }: { order: OrderWithItem
           {(order.amount_total / 100).toLocaleString()}
           {order.amount_refunded > 0 ? <span className="text-[var(--admin-danger)]"> (refunded)</span> : null}
         </div>
+        {order.special_instructions ? (
+          <div className="mt-2 rounded-md border border-[var(--admin-warning)] bg-[var(--admin-warning-bg)] px-2 py-1.5 text-xs text-[var(--admin-text)]">
+            <span className="font-medium">Gift note: </span>
+            {order.special_instructions}
+          </div>
+        ) : null}
+        {order.dispute_status ? (
+          <div className="mt-2 rounded-md border border-[var(--admin-danger-border)] bg-[var(--admin-danger-bg)] px-2 py-1.5 text-xs text-[var(--admin-danger)]">
+            Disputed with the bank ({order.dispute_status.replace(/_/g, " ")}) - respond in your Stripe Dashboard before
+            the evidence deadline.
+          </div>
+        ) : null}
       </td>
       <td className="py-3 pr-3">
         <div className="text-[var(--admin-text)]">{order.customer_name}</div>
@@ -125,6 +158,25 @@ export function OrderRow({ order, outOfStockProductIds }: { order: OrderWithItem
                 </option>
               ))}
             </select>
+
+            <div className="space-y-1 border-t border-[var(--admin-border)] pt-2">
+              <input
+                value={trackingNumber}
+                onChange={(e) => setTrackingNumber(e.target.value)}
+                placeholder="Tracking number"
+                className={trackingInputClass}
+              />
+              <input value={carrier} onChange={(e) => setCarrier(e.target.value)} placeholder="Carrier (optional)" className={trackingInputClass} />
+              <button
+                type="button"
+                onClick={handleSaveTracking}
+                disabled={savingTracking}
+                className="text-xs text-[var(--admin-accent-soft)] underline underline-offset-2 hover:opacity-75 disabled:opacity-50"
+              >
+                {savingTracking ? "Saving…" : trackingSaved ? "Saved" : "Save tracking"}
+              </button>
+            </div>
+
             <button
               type="button"
               onClick={() => setConfirmingRefund(true)}

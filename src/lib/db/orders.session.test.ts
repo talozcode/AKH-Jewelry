@@ -37,7 +37,46 @@ describe("sessionToOrderRow", () => {
       stripe_payment_intent_id: "pi_test_1",
       amount_total: 90000,
       currency: "ILS",
+      special_instructions: null,
     });
+  });
+
+  it("extracts the gift-note custom field when the customer filled it in", () => {
+    const session = {
+      id: "cs_test_6",
+      payment_intent: null,
+      customer_details: null,
+      collected_information: null,
+      amount_total: 0,
+      currency: null,
+      custom_fields: [{ key: "gift_note", label: { type: "custom", custom: "Gift note" }, type: "text", text: { value: "Please gift wrap" } }],
+    } as SessionInput;
+    expect(sessionToOrderRow(session).special_instructions).toBe("Please gift wrap");
+  });
+
+  it("stores null, not an empty string, when the gift-note field was left blank", () => {
+    const session = {
+      id: "cs_test_7",
+      payment_intent: null,
+      customer_details: null,
+      collected_information: null,
+      amount_total: 0,
+      currency: null,
+      custom_fields: [{ key: "gift_note", label: { type: "custom", custom: "Gift note" }, type: "text", text: { value: "" } }],
+    } as SessionInput;
+    expect(sessionToOrderRow(session).special_instructions).toBeNull();
+  });
+
+  it("stores null when custom_fields is absent entirely", () => {
+    const session = {
+      id: "cs_test_8",
+      payment_intent: null,
+      customer_details: null,
+      collected_information: null,
+      amount_total: 0,
+      currency: null,
+    } as SessionInput;
+    expect(sessionToOrderRow(session).special_instructions).toBeNull();
   });
 
   it("fills every NOT NULL shipping/customer field with empty strings, never undefined, when shipping details are missing", () => {

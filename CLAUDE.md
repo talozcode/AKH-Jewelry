@@ -602,8 +602,10 @@ the decided effect," not a place where this logic can drift.
 ## Tests (built 2026-09-11, expanded via an adversarial edge-case pass 2026-09-11)
 
 `npm test` (Vitest, `vitest.config.ts`; `npm run test:watch` while
-developing). 86 tests across 11 files. No test touches a real Supabase
-or Stripe call.
+developing). 183 tests across 19 files as of the multi-item cart and
+order-extras work (2026-09-12) - the strategy below hasn't changed, just
+grown to cover the cart/checkout-line logic and the new email templates.
+No test touches a real Supabase or Stripe call.
 
 **The strategy, not just the file list**: `supabaseAdmin()` and
 `stripeClient()` are hard to mock cleanly (supabase-js's chained query
@@ -1111,6 +1113,97 @@ multiple of the same piece or several different ones in one order.
   per-item amounts instead could disagree with Stripe's own total once
   currency rounding is involved).
 
+## Order extras: tracking numbers, gift notes, disputes, and email (built 2026-09-12)
+
+Closes out the remaining Tier 1/Tier 2 handover gaps from the multi-item
+cart pass above: no error alerting anywhere, no tracking-number field, no
+way for a customer to leave a gift/engraving note, no dispute/chargeback
+visibility, and no transactional email at all (Stripe's own receipt was
+the only thing a customer ever got). Migration `0013_order_extras.sql`
+added `tracking_number`, `carrier`, `special_instructions`,
+`stripe_dispute_id`, `dispute_status` to `orders` (all nullable text; no
+CHECK constraint on `dispute_status` since it stores Stripe's own
+evolving enum verbatim rather than a fixed local list).
+
+- **Gift note / engraving request**: a session-level Stripe Checkout
+  `custom_fields` entry (`SPECIAL_INSTRUCTIONS_FIELD_KEY = "gift_note"`
+  in `checkoutParams.ts`), optional, 255-character max (Stripe's real
+  limit; `minimum_length` must be `>= 1` or omitted entirely - both
+  discovered by a live API error, not documentation). It's collected
+  once per order on Stripe's own hosted page, not per line item - Stripe
+  Checkout has no per-item custom field without a fully custom
+  Elements-based UI, which this app deliberately avoids (see "Checkout /
+  payments" above). Read back via `session.custom_fields[]` directly on
+  the Session object (no separate API call, unlike line items) in
+  `sessionToOrderRow()`. Shown to the owner in `/admin/orders` as an
+  amber note block on the order row.
+- **Tracking number and carrier**: two plain text inputs on each
+  `/admin/orders` row (`updateTrackingAction` in `orders/actions.ts`),
+  saved independently of the shipped/unfulfilled status toggle so the
+  owner can record a number before or after flipping status. Included in
+  the shipped-notification email (see below) and, when present, in
+  `ordersToCsv`.
+- **Dispute/chargeback handling**: the webhook now subscribes to
+  `charge.dispute.created`, `charge.dispute.updated` and
+  `charge.dispute.closed`, looks the order up by
+  `dispute.payment_intent`, and writes `stripe_dispute_id`/
+  `dispute_status` via `setOrderDisputeStatus()`. `/admin/orders` shows a
+  red banner ("Disputed with the bank...respond in your Stripe Dashboard
+  before the evidence deadline") on an affected row. The owner alert
+  email (below) only fires on `.created`, not on every `.updated`/
+  `.closed` ping, to avoid re-emailing on every status change of the same
+  dispute - responding to it stays a manual Stripe Dashboard action,
+  same as a real refund from the Dashboard already was.
+- **Error alerting to the owner**: `alertOwnerOfError()` in the webhook
+  route is a best-effort helper (wrapped in its own try/catch, no-ops if
+  no owner email is configured) now called from every existing catch
+  block - `checkout.session.completed` failures, refund-handling
+  failures, and dispute-handling failures - closing the "no error
+  monitoring/alerting exists" gap that the edge-case audit above flagged
+  for the "product deleted before webhook delivery" scenario. This is
+  intentionally NOT a replacement for real error monitoring (Sentry
+  etc.; still out of scope per the launch-blockers list) - it only
+  covers the specific failure paths this webhook route itself can catch.
+- **Email infrastructure**: `src/lib/email/templates.ts` holds pure,
+  directly-tested template builders (`orderConfirmationEmail`,
+  `orderShippedEmail`, `refundConfirmationEmail`,
+  `ownerNewOrderAlertEmail`, `ownerDisputeAlertEmail`,
+  `ownerErrorAlertEmail`), each returning `{ subject, html, text }` -
+  same testing philosophy as everywhere else in this codebase (test the
+  decision, not the send). `src/lib/email/send.ts` wraps the `resend`
+  npm package: `sendEmail()` logs and returns `{ ok: false }` rather than
+  throwing whenever `RESEND_API_KEY` is unset, exactly matching the
+  pattern already established for owner-managed Stripe credentials
+  before the owner could set her own key. Wired in: order confirmation +
+  an owner new-order alert on `checkout.session.completed`; a shipped
+  email when `/admin/orders` marks an order shipped; a refund
+  confirmation from both `refundOrderAction` (the in-app button) and the
+  webhook's Dashboard-refund path (guarded against double-sending, since
+  the in-app path already sends its own).
+  - **Not yet actually sending real email.** No AKH-dedicated Resend
+    account or verified sending domain exists yet - the only Resend
+    account currently connected to this session belongs to a different,
+    unrelated client project (`ayumisakuraba.com`), and per this user's
+    own convention every client gets its own dedicated account. Every
+    email call today logs `"email not sent (RESEND_API_KEY not
+    configured yet)"` and returns cleanly rather than sending anything.
+    **This needs the owner (or the developer, before full handover) to
+    create a Resend account, verify a sending domain for
+    `akhjewelry.com`, and set `RESEND_API_KEY`/`EMAIL_FROM`/`OWNER_EMAIL`**
+    - added to the launch checklist below.
+- **Verified end-to-end without a browser**: Stripe Checkout Sessions
+  can't be paid via a server-side API call (no test-mode shortcut exists
+  for actually completing a hosted Checkout Session, unlike a raw
+  PaymentIntent), so this was verified by creating a real Stripe
+  test-mode Checkout Session for a Made to Order product (chosen so the
+  test has zero inventory side effects), building a synthetic
+  `checkout.session.completed` event around that real session with
+  `stripe.webhooks.generateTestHeaderString()`, and POSTing it with a
+  valid signature to the local dev server's actual webhook route.
+  Confirmed a 200 response, a real `orders` row and matching
+  `order_items` row with the correct product/name/amount, then deleted
+  the test order and expired the Stripe session afterward.
+
 ## What's stubbed / explicitly NOT built yet
 
 - Analytics/conversion tracking, abandoned-cart email, wishlist persistence
@@ -1177,10 +1270,13 @@ than deleted, so the audit trail stays intact.
   placeholder" pill on `/admin/pages` flags which ones remain), and the
   made-to-order return/withdrawal question flagged inside the Terms
   content itself needs actual legal review, not just drafted language.
-- [ ] **No order confirmation/shipping emails**: Stripe's own receipt
-  is the only thing a customer gets today; nothing branded from AKH,
-  no "your order shipped" email when `/admin/orders` marks it shipped.
-  Explicitly deferred (no email provider set up yet).
+- [x] **No order confirmation/shipping emails** existed; Stripe's own
+  receipt was the only thing a customer got. Fixed 2026-09-12: order
+  confirmation, shipped, refund and owner-alert emails are all built and
+  wired in (see "Order extras" below). **Still blocked on a real
+  credential**: no AKH-dedicated Resend account/verified sending domain
+  exists yet, so every send currently logs and no-ops rather than
+  actually delivering - see the launch checklist below.
 - [ ] **Supabase project is explicitly temporary** ("until I give you a
   new account," the user's own words): the entire catalog and order
   history lives there until it moves to a permanent project.
@@ -1243,9 +1339,7 @@ than deleted, so the audit trail stays intact.
 
 ### ⚪ Longer-term / nice-to-have
 
-- [ ] Real multi-item cart (currently deliberate "Buy Now per product"
-  scope, per the user's own decision; revisit only if the shop
-  outgrows single-item checkout).
+- [x] Real multi-item cart: built 2026-09-12, see "Multi-item cart" above.
 - [ ] Discount/promo codes, abandoned-cart recovery.
 - [ ] Journal/blog, campaigns/announcement bar, roles & permissions,
   localization, site search, analytics dashboard: all explicitly
@@ -1333,3 +1427,10 @@ after all of these are done, not just the launch-blockers above them.
   still holds the entire live catalog and order history. Moving it is
   a re-provision plus a data/asset copy, not a code rewrite, but it
   needs the owner to actually provide the permanent account.
+- [ ] **Set up a dedicated Resend account for AKH**: order confirmation,
+  shipped, refund, and owner-alert emails are all built and wired in
+  (see "Order extras" above) but every send currently no-ops, since no
+  Resend account/verified sending domain exists for `akhjewelry.com`
+  yet. Create one, verify the domain, and set `RESEND_API_KEY`/
+  `EMAIL_FROM`/`OWNER_EMAIL` (locally and on Vercel) to turn real
+  emails on with no further code changes.
