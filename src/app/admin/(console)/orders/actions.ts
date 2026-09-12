@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { requireAdminAction } from "@/lib/admin/auth";
 import { friendlyDbError } from "@/lib/admin/friendlyError";
-import { canRefund, getOrderById, refundOrder, updateOrderStatus, type SettableOrderStatus } from "@/lib/db/orders";
+import { canRefund, getOrderById, getOrders, ordersToCsv, refundOrder, updateOrderStatus, type OrderStatus, type SettableOrderStatus } from "@/lib/db/orders";
 import { stripeClient } from "@/lib/stripe";
 
 const SETTABLE_STATUSES: SettableOrderStatus[] = ["unfulfilled", "shipped"];
@@ -64,5 +64,22 @@ export async function refundOrderAction(id: string): Promise<{ ok: true } | { ok
     return { ok: true };
   } catch (err) {
     return { ok: false, error: err instanceof Error ? friendlyDbError(err.message) : "Refund failed" };
+  }
+}
+
+/**
+ * For the owner's own bookkeeping/accountant/tax filing - previously the
+ * only export in the admin was the GDPR data-subject export, scoped to
+ * one customer's email at a time. Respects whatever status filter is
+ * currently applied on the page, so "Export CSV" while viewing e.g.
+ * Refunded exports just that filtered set, matching what she's looking at.
+ */
+export async function exportOrdersCsvAction(status?: OrderStatus): Promise<{ ok: true; csv: string } | { ok: false; error: string }> {
+  await requireAdminAction();
+  try {
+    const orders = await getOrders(status ? { status } : undefined);
+    return { ok: true, csv: ordersToCsv(orders) };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? friendlyDbError(err.message) : "Export failed" };
   }
 }

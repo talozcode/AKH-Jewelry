@@ -89,6 +89,8 @@ export type Database = {
           stripe_webhook_secret_ciphertext: string | null;
           stripe_webhook_secret_preview: string | null;
           stripe_webhook_secret_updated_at: string | null;
+          admin_password_hash: string | null;
+          admin_password_updated_at: string | null;
           updated_at: string;
         };
         Insert: Partial<Database["public"]["Tables"]["site_settings"]["Row"]> &

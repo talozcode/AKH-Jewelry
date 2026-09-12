@@ -17,6 +17,69 @@ export type NewOrderRow = Database["public"]["Tables"]["orders"]["Insert"];
  */
 export type SettableOrderStatus = Exclude<OrderStatus, "refunded">;
 
+const CSV_COLUMNS = [
+  "Date",
+  "Order ID",
+  "Product",
+  "Size",
+  "Customer name",
+  "Customer email",
+  "Amount",
+  "Currency",
+  "Refunded",
+  "Status",
+  "Oversold",
+  "Shipping address",
+  "City",
+  "State",
+  "Postal code",
+  "Country",
+] as const;
+
+function csvField(value: string): string {
+  // RFC 4180: quote a field if it contains a comma, quote, or newline;
+  // double any quote inside it. Every field is quoted-if-needed
+  // independently - safe for customer/product names/addresses, which are
+  // free text and can contain any of those characters.
+  if (/[",\n]/.test(value)) return `"${value.replace(/"/g, '""')}"`;
+  return value;
+}
+
+/**
+ * Formats orders as CSV for the owner's own bookkeeping/tax filing - the
+ * only export previously available was the GDPR data-subject export
+ * (exportPersonalData in ./privacy.ts), scoped to one customer's email at
+ * a time, not a general ledger. Amounts are converted from Stripe's
+ * smallest-currency-unit integers to decimal (matching what she sees on
+ * screen), not summed across currencies (see getRevenueByCurrency's same
+ * reasoning) - each row keeps its own order's actual currency.
+ */
+export function ordersToCsv(orders: Order[]): string {
+  const rows = orders.map((o) =>
+    [
+      new Date(o.created_at).toISOString().slice(0, 10),
+      o.id,
+      o.product_name,
+      o.size ?? "",
+      o.customer_name,
+      o.customer_email,
+      (o.amount_total / 100).toFixed(2),
+      o.currency,
+      (o.amount_refunded / 100).toFixed(2),
+      o.status,
+      o.oversold ? "yes" : "",
+      [o.shipping_line1, o.shipping_line2].filter(Boolean).join(", "),
+      o.shipping_city,
+      o.shipping_state ?? "",
+      o.shipping_postal_code,
+      o.shipping_country,
+    ]
+      .map(csvField)
+      .join(",")
+  );
+  return [CSV_COLUMNS.join(","), ...rows].join("\n");
+}
+
 export async function getOrders(filters?: { status?: OrderStatus }): Promise<Order[]> {
   let query = supabaseAdmin().from("orders").select("*").order("created_at", { ascending: false });
   if (filters?.status) query = query.eq("status", filters.status);
@@ -44,6 +107,21 @@ export async function getOrderCountsByStatus(): Promise<Record<OrderStatus, numb
   const counts: Record<OrderStatus, number> = { unfulfilled: 0, shipped: 0, refunded: 0 };
   for (const row of data ?? []) counts[row.status]++;
   return counts;
+}
+
+/**
+ * Count of orders flagged oversold (see markOrderOversold below). Used for
+ * the Dashboard card - previously this flag only ever showed as a badge on
+ * the individual order row in /admin/orders, which meant it was invisible
+ * unless the owner happened to read every row closely. It's rare (only
+ * fires on a genuine concurrent-buyer race for the last tracked unit) but
+ * high-stakes when it happens (a customer paid for a piece that doesn't
+ * exist), so it now surfaces on the page she actually opens by default.
+ */
+export async function getOversoldCount(): Promise<number> {
+  const { count, error } = await supabaseAdmin().from("orders").select("id", { count: "exact", head: true }).eq("oversold", true);
+  if (error) throw new Error(`getOversoldCount: ${error.message}`);
+  return count ?? 0;
 }
 
 /**

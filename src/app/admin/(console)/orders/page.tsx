@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { getOrders, type OrderStatus } from "@/lib/db/orders";
 import { getProductById } from "@/lib/products";
+import { ExportOrdersButton } from "./ExportOrdersButton";
 import { OrderRow } from "./OrderRow";
 
 export const dynamic = "force-dynamic";
@@ -37,18 +38,21 @@ export default async function OrdersPage({
       <h1 className="text-2xl font-semibold text-[var(--admin-text)]">Orders</h1>
       <p className="mt-1 text-sm text-[var(--admin-text-muted)]">Real, paid Stripe orders. Mark a piece shipped once it&apos;s dispatched.</p>
 
-      <div className="mt-6 flex gap-2 text-sm">
-        {STATUS_FILTERS.map((f) => (
-          <a
-            key={f.label}
-            href={f.value ? `/admin/orders?status=${f.value}` : "/admin/orders"}
-            className={`rounded-md px-3 py-1.5 font-medium ${
-              validStatus === f.value ? "bg-[var(--admin-accent)] text-[var(--admin-accent-text)]" : "border border-[var(--admin-border-strong)] text-[var(--admin-text-muted)] hover:bg-[var(--admin-surface-2)]"
-            }`}
-          >
-            {f.label}
-          </a>
-        ))}
+      <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex gap-2 text-sm">
+          {STATUS_FILTERS.map((f) => (
+            <a
+              key={f.label}
+              href={f.value ? `/admin/orders?status=${f.value}` : "/admin/orders"}
+              className={`rounded-md px-3 py-1.5 font-medium ${
+                validStatus === f.value ? "bg-[var(--admin-accent)] text-[var(--admin-accent-text)]" : "border border-[var(--admin-border-strong)] text-[var(--admin-text-muted)] hover:bg-[var(--admin-surface-2)]"
+              }`}
+            >
+              {f.label}
+            </a>
+          ))}
+        </div>
+        <ExportOrdersButton status={validStatus} />
       </div>
 
       <div className="mt-6 overflow-hidden rounded-lg border border-[var(--admin-border)] bg-[var(--admin-surface)] shadow-sm">

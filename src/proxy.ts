@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { ADMIN_COOKIE, safeEqual } from "@/lib/admin/cookie";
+import { ADMIN_COOKIE } from "@/lib/admin/cookie";
 
 /**
  * Next 16 renames the `middleware` convention to `proxy`. This file must
@@ -9,8 +9,21 @@ import { ADMIN_COOKIE, safeEqual } from "@/lib/admin/cookie";
  *
  * This is the edge-level half of the admin gate; `requireAdminPage()` /
  * `requireAdminAction()` in `lib/admin/auth.ts` are the authoritative check
- * that still holds if this matcher is ever edited to silently exclude a
- * route. See that file's comment for why both exist.
+ * that still holds if this matcher is ever edited. See that file's comment
+ * for the full two-layer design.
+ *
+ * Only checks that a cookie is present, not that it's the correct value.
+ * It used to do the full exact-match check too, but once the owner can
+ * rotate her own admin password (`src/lib/adminPassword.ts`, stored in the
+ * database), the ONLY place that can verify a candidate value is correct
+ * is somewhere that can query that database - and this file deliberately
+ * never does that: it runs in the edge runtime specifically to stay fast
+ * and dependency-free (no `node:crypto`, per `lib/admin/cookie.ts`'s own
+ * comment, and no Supabase round-trip on every single admin request
+ * either). A present-but-wrong cookie now reaches the page level instead
+ * of being rejected here for free - `requireAdminPage()`/
+ * `requireAdminAction()` are what actually enforce correctness, and were
+ * already documented as the authoritative check before this change.
  */
 export function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
@@ -21,17 +34,11 @@ export function proxy(req: NextRequest) {
   if (pathname === "/admin/login") return NextResponse.next();
 
   const cookie = req.cookies.get(ADMIN_COOKIE)?.value;
-  const expected = process.env.ADMIN_TOKEN;
-
-  // Fail closed when ADMIN_TOKEN is unset - a missing env var must never
-  // read as "no auth required."
-  if (!cookie || !expected || !safeEqual(cookie, expected)) {
+  if (!cookie) {
     const url = req.nextUrl.clone();
     url.pathname = "/admin/login";
     url.searchParams.set("next", pathname);
-    const res = NextResponse.redirect(url);
-    if (cookie) res.cookies.delete(ADMIN_COOKIE);
-    return res;
+    return NextResponse.redirect(url);
   }
 
   return NextResponse.next();

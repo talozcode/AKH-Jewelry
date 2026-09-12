@@ -1,36 +1,43 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# AKH Jewelry
 
-## Getting Started
+Next.js storefront + admin CMS for [akhjewelry.com](https://akhjewelry.com), a
+one-owner jewelry studio. Live checkout via Stripe, content/inventory managed
+entirely through `/admin` - see [`CLAUDE.md`](./CLAUDE.md) for the full build
+history, architecture decisions, and current status. That file is the real
+reference; this one is just enough to get a fresh clone running.
 
-First, run the development server:
+## Setup
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+1. `npm install`
+2. Copy `.env.local.example` to `.env.local` and fill in real values:
+   - `SUPABASE_URL` / `SUPABASE_SECRET_KEY` - from the Supabase project's
+     Settings -> API page.
+   - `ADMIN_TOKEN` - the password for `/admin/login`; any string works locally.
+   - `STRIPE_SECRET_KEY` - a **test-mode** key from the Stripe Dashboard.
+   - `STRIPE_WEBHOOK_SECRET` - only obtainable after this app is deployed and
+     a webhook endpoint is registered against it in the Stripe Dashboard
+     (see `CLAUDE.md`'s "Checkout / payments" section). Local webhook testing
+     can use the Stripe CLI (`stripe listen --forward-to
+     localhost:3000/api/webhooks/stripe`) instead, which prints its own
+     `whsec_...` value for local use.
+   - `SETTINGS_ENCRYPTION_KEY` - generate with `openssl rand -base64 32`.
+3. `npm run dev`, then open [http://localhost:3000](http://localhost:3000).
+   Admin console is at `/admin/login`.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Scripts
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- `npm run dev` / `npm run build` / `npm start`
+- `npm run typecheck` / `npm run lint` / `npm test` / `npm run no-dashes`
+  (checks for em/en dashes and lookalikes in copy and source - a house
+  writing-style rule, see `scripts/no-dashes.sh`)
+- `npm run seed` / `npm run seed:pages` - one-time data seeding scripts,
+  see their own file headers before running against a populated database
+- `npm run migrate:images` - one-time legacy-image migration, see its header
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Database
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Migrations live in `supabase/migrations/`, applied by hand (no Supabase CLI
+project link in this environment) via `psql` against the project's Session
+Pooler connection string. `src/lib/supabase/database.types.ts` is hand-written
+and must be updated alongside every migration - there's no `supabase gen
+types` codegen step today.

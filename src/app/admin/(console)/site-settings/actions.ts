@@ -1,11 +1,18 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { cookies } from "next/headers";
 import Stripe from "stripe";
-import { requireAdminAction } from "@/lib/admin/auth";
+import { ADMIN_COOKIE, requireAdminAction } from "@/lib/admin/auth";
 import { friendlyDbError } from "@/lib/admin/friendlyError";
 import { looksLikeStripeSecretKey, looksLikeStripeWebhookSecret } from "@/lib/stripe";
 import { getStripeCredentialsStatus, setStripeCredentials, type StripeCredentialsStatus } from "@/lib/stripeSettings";
+import {
+  getAdminPasswordStatus,
+  setAdminPassword,
+  verifyAdminCredential,
+  type AdminPasswordStatus,
+} from "@/lib/adminPassword";
 import { updateSiteSettings, type SiteSettings } from "@/lib/site-settings";
 
 export async function updateSiteSettingsAction(settings: SiteSettings): Promise<{ ok: true } | { ok: false; error: string }> {
@@ -73,6 +80,52 @@ export async function updateStripeCredentialsAction(input: {
     await setStripeCredentials({ secretKey, webhookSecret });
     revalidatePath("/admin/site-settings");
     const status = await getStripeCredentialsStatus();
+    return { ok: true, status };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? friendlyDbError(err.message) : "Failed to save" };
+  }
+}
+
+/**
+ * Lets the owner rotate her own admin login password. Requires her current
+ * password (proves she's the legitimate admin, not just someone with a
+ * still-valid session) before accepting a new one. Since the login cookie
+ * IS the credential itself (not a session id looked up server-side, see
+ * CLAUDE.md's CMS section), changing the password would otherwise log her
+ * out of her own current session mid-edit - this re-sets the cookie to the
+ * new value on success so that doesn't happen.
+ */
+export async function updateAdminPasswordAction(input: {
+  currentPassword: string;
+  newPassword: string;
+}): Promise<{ ok: true; status: AdminPasswordStatus } | { ok: false; error: string }> {
+  await requireAdminAction();
+
+  const currentPassword = input.currentPassword.trim();
+  const newPassword = input.newPassword.trim();
+
+  if (!(await verifyAdminCredential(currentPassword))) {
+    return { ok: false, error: "Current password is incorrect." };
+  }
+  if (newPassword.length < 8) {
+    return { ok: false, error: "New password must be at least 8 characters." };
+  }
+  if (newPassword === currentPassword) {
+    return { ok: false, error: "New password must be different from the current one." };
+  }
+
+  try {
+    await setAdminPassword(newPassword);
+    const store = await cookies();
+    store.set(ADMIN_COOKIE, newPassword, {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+      path: "/",
+      maxAge: 60 * 60 * 24 * 7,
+    });
+    revalidatePath("/admin/site-settings");
+    const status = await getAdminPasswordStatus();
     return { ok: true, status };
   } catch (err) {
     return { ok: false, error: err instanceof Error ? friendlyDbError(err.message) : "Failed to save" };

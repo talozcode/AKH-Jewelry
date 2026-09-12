@@ -1,5 +1,5 @@
 import { supabaseAdmin } from "../supabase/server";
-import { getOrderCountsByStatus, getOrders, getRevenueByCurrency } from "../db/orders";
+import { getOrderCountsByStatus, getOrders, getOversoldCount, getRevenueByCurrency } from "../db/orders";
 
 export async function getProductCounts() {
   const { data, error } = await supabaseAdmin().from("products").select("category, availability, is_published");
@@ -22,11 +22,12 @@ export async function getProductCounts() {
 }
 
 export async function getDashboardMetrics() {
-  const [products, orderStatusCounts, revenueByCurrency, recentOrders] = await Promise.all([
+  const [products, orderStatusCounts, revenueByCurrency, recentOrders, oversoldCount] = await Promise.all([
     getProductCounts(),
     getOrderCountsByStatus(),
     getRevenueByCurrency(),
     getOrders().then((orders) => orders.slice(0, 5)),
+    getOversoldCount(),
   ]);
-  return { products, orderStatusCounts, revenueByCurrency, recentOrders };
+  return { products, orderStatusCounts, revenueByCurrency, recentOrders, oversoldCount };
 }

@@ -45,7 +45,7 @@ function currencySymbol(currency: string) {
 }
 
 export default async function AdminDashboardPage() {
-  const { products, orderStatusCounts, revenueByCurrency, recentOrders } = await getDashboardMetrics();
+  const { products, orderStatusCounts, revenueByCurrency, recentOrders, oversoldCount } = await getDashboardMetrics();
   const revenueEntries = Object.entries(revenueByCurrency);
   const primaryRevenue = revenueEntries.sort((a, b) => b[1] - a[1])[0];
 
@@ -53,6 +53,23 @@ export default async function AdminDashboardPage() {
     <div>
       <h1 className="font-display text-3xl text-[var(--admin-text)]">Dashboard</h1>
       <p className="mt-1 text-sm text-[var(--admin-text-muted)]">An overview of the shop right now.</p>
+
+      {oversoldCount > 0 ? (
+        // Previously "oversold" only showed as a badge on the individual
+        // order row in /admin/orders - invisible unless she happened to
+        // read every row closely, for a rare-but-high-stakes situation
+        // (a customer paid for a piece that doesn't exist). This is the
+        // first thing on the page she opens by default instead.
+        <Link
+          href="/admin/orders"
+          className="mt-6 flex items-center justify-between rounded-lg border border-[var(--admin-danger-border)] bg-[var(--admin-danger-bg)] px-5 py-4 text-sm transition hover:opacity-90"
+        >
+          <span className="font-medium text-[var(--admin-danger)]">
+            {oversoldCount} order{oversoldCount === 1 ? "" : "s"} oversold - a customer paid for a piece that&apos;s no longer available.
+          </span>
+          <span className="text-[var(--admin-danger)]">Review orders &rarr;</span>
+        </Link>
+      ) : null}
 
       <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-5">
         <Card

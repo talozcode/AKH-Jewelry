@@ -1,0 +1,30 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run no-dashes
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm test
+      # Not `npm run build`: a real build needs live Supabase/Stripe
+      # credentials this workflow has no access to (and shouldn't - CI
+      # secrets are a separate, deliberate setup, not a default). The four
+      # checks above catch type errors, lint violations, the house
+      # no-dashes rule, and every unit test regression without needing any
+      # of that - see CLAUDE.md's Tests section for why the suite is
+      # structured to make that possible (pure-function extraction, no
+      # live-service calls in tests).

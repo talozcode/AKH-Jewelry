@@ -9,10 +9,15 @@
 export const ADMIN_COOKIE = "akh_admin";
 
 /**
- * Constant-time string compare, no `node:crypto`, so it works in both runtimes.
- *
- * Length is compared first and therefore leaks, which matches `tokenMatches` in `auth.ts`. The two
- * gates must not disagree about whether a value is valid.
+ * Constant-time string compare, no `node:crypto`, so it's safe to call from
+ * edge runtime code if a future check there ever needs one again -
+ * `proxy.ts` used this for its exact-value check until the owner gained
+ * the ability to rotate her own admin password (`../adminPassword.ts`),
+ * which can only be verified against the database, something `proxy.ts`
+ * deliberately never does (see that file's comment). `proxy.ts` now only
+ * checks that a cookie is present, so nothing in `src/` currently calls
+ * this - kept and still tested (cookie.test.ts) as the edge-safe primitive
+ * for whenever an edge-runtime value comparison is needed again.
  */
 export function safeEqual(a: string, b: string): boolean {
   if (a.length !== b.length) return false;
