@@ -4,7 +4,7 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 0 # paused 10/10: no new Dependabot PRs or builds; restore to 10 to resume
     groups:
       # Next.js and its own ESLint config must move together - a mismatched
       # pair is a common source of confusing lint errors.
